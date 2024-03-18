@@ -32,7 +32,7 @@ const Login = () => {
       if (response.ok && data.user) {
         console.log('Login successful:', data.user);
         setErrorMessage('');
-        dispatch(login({ username: data.user.username, sessionKey: data.user.id, role: data.user.role }));
+        dispatch(login({ username: data.user.username, fullname: data.user.fullname, sessionKey: data.user.id, role: data.user.role, email: data.user.email }));
         
         // Store authentication state in localStorage
         localStorage.setItem('isAuthenticated', true);

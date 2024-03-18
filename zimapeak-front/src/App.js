@@ -7,6 +7,7 @@ import Login from './panel/Login';
 import ProtectedRoute from './ProtectedRoute';
 
 import Contacts from './panel/Contacts';
+import Email from './panel/Email';
 
 import MemberDashboard from './panel/User/UserDashboard';
 import AdminDashboard from './panel/Admin/AdminDashboard';
@@ -30,6 +31,7 @@ function App() {
           } />
 
           <Route path="/contacts" element={<ProtectedRoute><Contacts /></ProtectedRoute>} />
+          <Route path="/email" element={<ProtectedRoute><Email /></ProtectedRoute>} />
         </Routes>
       </div>
     </Router>

@@ -6,6 +6,7 @@ const multer = require('multer');
 const xlsx = require('xlsx');
 const fs = require('fs');
 const uuid = require('uuid'); 
+const sgMail = require('@sendgrid/mail');
 
 const app = express();
 const port = 3000;
@@ -62,7 +63,34 @@ app.post('/login', (req, res) => {
 
 // Fetch table data API
 app.get('/data', (req, res) => {
-  const sql = 'SELECT id, Name, Phone, Email, Website, status FROM Contacts'; // Adjust the column names based on your schema
+  let sql = 'SELECT id, Name, Phone, Email, Website, status, date_added, emails_sent FROM Contacts';
+
+  // Check if filterOption and startDate query parameters are provided
+  const { filterOption, startDate } = req.query;
+  if (filterOption && startDate) {
+    let filterCondition = '';
+    switch (filterOption) {
+      case 'lastHour':
+        filterCondition = `date_added >= NOW() - INTERVAL 1 HOUR`;
+        break;
+      case 'lastDay':
+        filterCondition = `date_added >= NOW() - INTERVAL 1 DAY`;
+        break;
+      case 'lastWeek':
+        filterCondition = `date_added >= NOW() - INTERVAL 1 WEEK`;
+        break;
+      case 'lastMonth':
+        filterCondition = `date_added >= NOW() - INTERVAL 1 MONTH`;
+        break;
+      default:
+        break;
+    }
+
+    if (filterCondition) {
+      sql += ` WHERE ${filterCondition}`;
+    }
+  }
+
   db.query(sql, (err, result) => {
     if (err) {
       res.status(500).json({ error: err.message });
@@ -71,6 +99,8 @@ app.get('/data', (req, res) => {
     }
   });
 });
+
+
 
 
 // File upload configuration using multer
@@ -203,6 +233,72 @@ app.delete('/delete', (req, res) => {
     }
   });
 });
+
+// Initialize SendGrid with your API key
+sgMail.setApiKey('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');
+
+app.post('/send-email', async (req, res) => {
+  const { to, from, subject, message, footer } = req.body;
+
+  if (!to || !from || !subject || !message) {
+      return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  // Split the 'to' field by commas to handle multiple email addresses
+  const toAddresses = to.split(',').map(address => address.trim());
+
+  try {
+      // Iterate over each email address and send a separate email
+      for (const address of toAddresses) {
+          const msg = {
+              to: address,
+              from,
+              subject,
+              html: `${message}<br><br>${footer}` // Combine message and footer as HTML
+          };
+          await sgMail.send(msg);
+      }
+
+      return res.status(200).json({ message: 'Emails sent successfully' });
+  } catch (error) {
+      console.error('Error sending emails:', error);
+      return res.status(500).json({ error: 'Failed to send emails' });
+  }
+});
+
+
+
+
+
+
+app.put('/update-emails-sent', (req, res) => {
+  try {
+      const { ids } = req.body;
+
+      if (!ids || !Array.isArray(ids)) {
+          return res.status(400).json({ error: 'IDs array is required' });
+      }
+
+      // Increment emails_sent by 1 for all specified IDs
+      const sql = 'UPDATE Contacts SET emails_sent = emails_sent + 1 WHERE id IN (?)';
+      const values = [ids];
+
+      db.query(sql, values, (err, result) => {
+          if (err) {
+              console.error('Error updating emails_sent:', err.message);
+              return res.status(500).json({ error: 'Error updating emails_sent', details: err.message });
+          } else {
+              console.log('Emails_sent updated successfully');
+              return res.status(200).json({ message: 'Emails_sent updated successfully' });
+          }
+      });
+  } catch (error) {
+      console.error('Error updating emails_sent:', error.message);
+      return res.status(500).json({ error: 'Error updating emails_sent', details: error.message });
+  }
+});
+
+
 
 
 

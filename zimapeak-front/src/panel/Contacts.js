@@ -171,7 +171,7 @@ const Contacts = () => {
       )}
       <div className="mt-5">
         <div className="col-12">
-          <ContactsTable reloadTable={reloadTable} />
+        <ContactsTable reloadTable={reloadTable} onEmailsSelected={() => {}} />
         </div>
       </div>
     </div>

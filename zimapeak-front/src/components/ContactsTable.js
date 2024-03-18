@@ -3,28 +3,72 @@ import axios from 'axios';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPowerOff, faTrash } from '@fortawesome/free-solid-svg-icons';
 
-const ContactsTable = ({ onDelete, reloadTable }) => {
+const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
     const [tableData, setTableData] = useState([]);
     const [selectedItems, setSelectedItems] = useState([]);
     const [selectAll, setSelectAll] = useState(false); // State for Select All checkbox
     const [showConfirmationModal, setShowConfirmationModal] = useState(false);
     const [actionToConfirm, setActionToConfirm] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
+    const [filterOption, setFilterOption] = useState('');
 
     useEffect(() => {
-        // Fetch table data from API upon component mount
         fetchData();
-    }, [reloadTable]); // Reload table data when reloadTable prop changes
-
+        handleEmailsSelected();
+    }, [reloadTable, selectedItems, filterOption]); // Include filterOption in the dependency array
+    
     const fetchData = async () => {
         try {
-            const response = await axios.get('http://localhost:3000/data');
+            let url = 'http://localhost:3000/data';
+    
+            // Modify the URL based on the selected filter option
+            if (filterOption) {
+                const currentDate = new Date();
+                let startDate;
+                switch (filterOption) {
+                    case 'lastHour':
+                        startDate = new Date(currentDate.getTime() - 1 * 60 * 60 * 1000);
+                        break;
+                    case 'lastDay':
+                        startDate = new Date(currentDate.getTime() - 24 * 60 * 60 * 1000);
+                        break;
+                    case 'lastWeek':
+                        startDate = new Date(currentDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+                        break;
+                    case 'lastMonth':
+                        startDate = new Date(currentDate.getTime() - 30 * 24 * 60 * 60 * 1000);
+                        break;
+                    default:
+                        startDate = null;
+                }
+    
+                // If a valid start date is calculated, append it to the URL
+                if (startDate) {
+                    // Convert startDate to ISO string format
+                    const formattedStartDate = startDate.toISOString();
+                    // Append filter option to the URL
+                    url += `?filterOption=${filterOption}&startDate=${formattedStartDate}`;
+                }
+            }
+    
+            console.log('Fetching data from URL:', url);
+    
+            const response = await axios.get(url);
             setTableData(response.data);
         } catch (error) {
             console.error('Error fetching data:', error);
             // Handle error fetching data
         }
     };
+    
+    
+    
+    const handleFilterOption = (option) => {
+        setFilterOption(option);
+        console.log('Selected filter option:', option);
+    };
+
+
 
     const handleSelect = (id) => {
         if (id !== undefined) {
@@ -142,7 +186,6 @@ const ContactsTable = ({ onDelete, reloadTable }) => {
     };
 
     const filteredTableData = tableData.filter(item => {
-        console.log('searchQuery:', searchQuery); // Debug log
         const searchLowerCase = searchQuery?.toLowerCase(); // Safely access toLowerCase()
         if (!searchLowerCase) return true; // If searchLowerCase is null or undefined, return true
         return (
@@ -153,19 +196,32 @@ const ContactsTable = ({ onDelete, reloadTable }) => {
         );
     });
 
+    const handleEmailsSelected = () => {
+        const selectedContacts = filteredTableData
+            .filter(item => selectedItems.includes(item.id)) // Filter selected items
+            .map(item => ({ id: item.id, email: item.Email })); // Extract user ID and email address
+        onEmailsSelected(selectedContacts);
+    };
+    
+
+
     return (
         <>
             <div className="d-flex justify-content-between mb-3">
-                <div className='col-4'>
-                <input
+                <div>
+                    <button className="btn link-secondary " onClick={() => handleFilterOption('lastHour')}>Last Hour</button>
+                    <button className="btn link-secondary mx-2" onClick={() => handleFilterOption('lastDay')}>Last Day</button>
+                    <button className="btn link-secondary mx-2" onClick={() => handleFilterOption('lastWeek')}>Last Week</button>
+                    <button className="btn link-secondary" onClick={() => handleFilterOption('lastMonth')}>Last Month</button>
+                </div>
+                <div className='col-4 d-flex align-items-center'>
+                    <input
                         type="text"
                         placeholder="Search..."
-                        className="form-control"
+                        className="form-control mx-2"
                         value={searchQuery}
                         onChange={handleSearch}
                     />
-                </div>
-                <div className='d-flex align-items-center'>
                     <FontAwesomeIcon type='button' className="link-secondary" icon={faPowerOff} onClick={handleToggleActivate} />
                     <FontAwesomeIcon type='button' className="link-secondary mx-2" icon={faTrash} onClick={() => handleActionConfirmation('delete')} />
                 </div>
@@ -175,11 +231,12 @@ const ContactsTable = ({ onDelete, reloadTable }) => {
                     <tr>
                         <th>
                             <span><input type="checkbox" onChange={handleSelectAll} checked={selectAll} />{' '}</span>
-                            Select All</th>
+                            Select</th>
                         <th>Name</th>
                         <th>Phone</th>
                         <th>Email</th>
                         <th>Website</th>
+                        <th>Emails Sent</th>
                         <th>Status</th>
                     </tr>
                 </thead>
@@ -197,18 +254,17 @@ const ContactsTable = ({ onDelete, reloadTable }) => {
                             <td><span style={{ color: item.status === 'active' ? 'black' : 'silver' }}>{item.Phone}</span></td>
                             <td><span style={{ color: item.status === 'active' ? 'black' : 'silver' }}>{item.Email}</span></td>
                             <td><span style={{ color: item.status === 'active' ? 'black' : 'silver' }}>{item.Website}</span></td>
+                            <td className='text-center'><span style={{ color: item.status === 'active' ? 'black' : 'silver' }}>{item.emails_sent}</span></td>
                             <td>
                                 <span
                                     style={{ color: item.status === 'active' ? 'green' : 'red', cursor: 'pointer' }}
                                     onClick={() => handleToggleSingleActivate(item.id)}
                                 >
-
                                     {item.status}
                                 </span>
                             </td>
                         </tr>
                     ))}
-
                 </tbody>
             </table>
             {showConfirmationModal && (
