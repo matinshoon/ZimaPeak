@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPowerOff, faTrash } from '@fortawesome/free-solid-svg-icons';
+import Dropdown from 'react-bootstrap/Dropdown';
+
 
 const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
     const [tableData, setTableData] = useState([]);
@@ -11,63 +13,92 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
     const [actionToConfirm, setActionToConfirm] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
     const [filterOption, setFilterOption] = useState('');
+    const [showActiveOnly, setShowActiveOnly] = useState(false);
+    const [selectedItem, setSelectedItem] = useState('All Times');
+    const [selectedRowId, setSelectedRowId] = useState(null); // State to track the selected row ID
+    const [editingNoteId, setEditingNoteId] = useState(null); // State to track the ID of the note being edited
+    const [editedNote, setEditedNote] = useState('');
+
+    const handleEditNote = (id, note) => {
+        setEditingNoteId(id);
+        setEditedNote(note);
+    };
+    
+    // Function to save the edited note
+    const saveEditedNote = async (id) => {
+        try {
+            // Send a PUT request to update the note in the backend
+            await axios.put('http://localhost:3000/update', {
+                ids: [id],
+                Note: editedNote // Pass the edited note value
+            });
+    
+            // Update the table data with the modified note
+            const updatedData = tableData.map((item) => {
+                if (item.id === id) {
+                    return {
+                        ...item,
+                        Note: editedNote
+                    };
+                }
+                return item;
+            });
+    
+            setTableData(updatedData);
+            setEditingNoteId(null); // Reset editing state
+        } catch (error) {
+            console.error('Error updating note:', error);
+        }
+    };
+
+    const handleRowClick = (id) => {
+        setSelectedRowId(id === selectedRowId ? null : id); // Toggle selected row
+    };
 
     useEffect(() => {
         fetchData();
         handleEmailsSelected();
-    }, [reloadTable, selectedItems, filterOption]); // Include filterOption in the dependency array
-    
+    }, [reloadTable, selectedItems, filterOption, showActiveOnly]);
+
     const fetchData = async () => {
         try {
             let url = 'http://localhost:3000/data';
-    
+
             // Modify the URL based on the selected filter option
             if (filterOption) {
-                const currentDate = new Date();
-                let startDate;
-                switch (filterOption) {
-                    case 'lastHour':
-                        startDate = new Date(currentDate.getTime() - 1 * 60 * 60 * 1000);
-                        break;
-                    case 'lastDay':
-                        startDate = new Date(currentDate.getTime() - 24 * 60 * 60 * 1000);
-                        break;
-                    case 'lastWeek':
-                        startDate = new Date(currentDate.getTime() - 7 * 24 * 60 * 60 * 1000);
-                        break;
-                    case 'lastMonth':
-                        startDate = new Date(currentDate.getTime() - 30 * 24 * 60 * 60 * 1000);
-                        break;
-                    default:
-                        startDate = null;
-                }
-    
-                // If a valid start date is calculated, append it to the URL
-                if (startDate) {
-                    // Convert startDate to ISO string format
-                    const formattedStartDate = startDate.toISOString();
-                    // Append filter option to the URL
-                    url += `?filterOption=${filterOption}&startDate=${formattedStartDate}`;
-                }
+                // Remove the startDate part and handle it server-side
+                url += `?filterOption=${filterOption}`;
             }
-    
+
+            if (showActiveOnly) {
+                // Append additional query parameter for showing active entities
+                url += '?status=active';
+            }
+
             console.log('Fetching data from URL:', url);
-    
+
             const response = await axios.get(url);
             setTableData(response.data);
         } catch (error) {
             console.error('Error fetching data:', error);
-            // Handle error fetching data
         }
     };
-    
-    
-    
+
     const handleFilterOption = (option) => {
+        // Convert the option to lowercase
+        const lowercaseOption = option.toLowerCase();
         setFilterOption(option);
-        console.log('Selected filter option:', option);
+        setSelectedItem(option);
+        // Clear selected items when changing filter options
+        setSelectedItems([]);
     };
 
+
+    const handleShowActiveOnly = () => {
+        setShowActiveOnly(!showActiveOnly);
+        // Clear selected items when toggling show active only
+        setSelectedItems([]);
+    };
 
 
     const handleSelect = (id) => {
@@ -202,28 +233,50 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
             .map(item => ({ id: item.id, email: item.Email })); // Extract user ID and email address
         onEmailsSelected(selectedContacts);
     };
-    
 
 
     return (
         <>
             <div className="d-flex justify-content-between mb-3">
-                <div>
-                    <button className="btn link-secondary " onClick={() => handleFilterOption('lastHour')}>Last Hour</button>
-                    <button className="btn link-secondary mx-2" onClick={() => handleFilterOption('lastDay')}>Last Day</button>
-                    <button className="btn link-secondary mx-2" onClick={() => handleFilterOption('lastWeek')}>Last Week</button>
-                    <button className="btn link-secondary" onClick={() => handleFilterOption('lastMonth')}>Last Month</button>
+                <div className='col-1'>
+                    <Dropdown>
+                        <Dropdown.Toggle variant="secondary" id="dropdown-basic">
+                            {selectedItem}
+                        </Dropdown.Toggle>
+
+                        <Dropdown.Menu>
+                            <Dropdown.Item onClick={() => handleFilterOption('lastHour')}>Last Hour</Dropdown.Item>
+                            <Dropdown.Item onClick={() => handleFilterOption('lastDay')}>Last Day</Dropdown.Item>
+                            <Dropdown.Item onClick={() => handleFilterOption('lastWeek')}>Last Week</Dropdown.Item>
+                            <Dropdown.Item onClick={() => handleFilterOption('lastMonth')}>Last Month</Dropdown.Item>
+                            <Dropdown.Item onClick={() => handleFilterOption('All Times')}>All Times</Dropdown.Item>
+                        </Dropdown.Menu>
+                    </Dropdown>
                 </div>
-                <div className='col-4 d-flex align-items-center'>
+                <div className='col-1  d-flex align-items-center'>
+                    <FontAwesomeIcon type='button' className="link-secondary" icon={faPowerOff} onClick={handleToggleActivate} />
+                    <FontAwesomeIcon type='button' className="link-secondary mx-3" icon={faTrash} onClick={() => handleActionConfirmation('delete')} />
+                </div>
+                <div className='col-2 d-flex align-items-center'>
+                    <input
+                        className="form-check-input mx-1"
+                        type="checkbox"
+                        id="showActiveOnly"
+                        checked={showActiveOnly}
+                        onChange={handleShowActiveOnly}
+                    />
+                    <label className="form-check-label" htmlFor="showActiveOnly">
+                        Active Only
+                    </label>
+                </div>
+                <div className='col-3 d-flex align-items-center'>
                     <input
                         type="text"
                         placeholder="Search..."
-                        className="form-control mx-2"
+                        className="form-control mx-1"
                         value={searchQuery}
                         onChange={handleSearch}
                     />
-                    <FontAwesomeIcon type='button' className="link-secondary" icon={faPowerOff} onClick={handleToggleActivate} />
-                    <FontAwesomeIcon type='button' className="link-secondary mx-2" icon={faTrash} onClick={() => handleActionConfirmation('delete')} />
                 </div>
             </div>
             <table className="table">
@@ -242,28 +295,50 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
                 </thead>
                 <tbody>
                     {filteredTableData.map((item) => (
-                        <tr key={item.id}>
-                            <td>
-                                <input
-                                    type="checkbox"
-                                    onChange={() => handleSelect(item.id)}
-                                    checked={selectedItems.includes(item.id)}
-                                />
-                            </td>
-                            <td><span style={{ color: item.status === 'active' ? 'black' : 'silver' }}>{item.Name}</span></td>
-                            <td><span style={{ color: item.status === 'active' ? 'black' : 'silver' }}>{item.Phone}</span></td>
-                            <td><span style={{ color: item.status === 'active' ? 'black' : 'silver' }}>{item.Email}</span></td>
-                            <td><span style={{ color: item.status === 'active' ? 'black' : 'silver' }}>{item.Website}</span></td>
-                            <td className='text-center'><span style={{ color: item.status === 'active' ? 'black' : 'silver' }}>{item.emails_sent}</span></td>
-                            <td>
-                                <span
-                                    style={{ color: item.status === 'active' ? 'green' : 'red', cursor: 'pointer' }}
-                                    onClick={() => handleToggleSingleActivate(item.id)}
-                                >
-                                    {item.status}
-                                </span>
-                            </td>
-                        </tr>
+                        <React.Fragment key={item.id}>
+                            <tr onClick={() => handleRowClick(item.id)}>
+                                <td>
+                                    <input
+                                        type="checkbox"
+                                        onChange={() => handleSelect(item.id)}
+                                        checked={selectedItems.includes(item.id)}
+                                    />
+                                </td>
+                                <td><span style={{ color: item.status === 'active' ? 'black' : 'silver' }}>{item.Name}</span></td>
+                                <td><a href={`tel:${item.Phone}`} style={{ color: item.status === 'active' ? 'black' : 'silver', textDecoration: 'none' }}>{item.Phone}</a></td>
+                                <td><span style={{ color: item.status === 'active' ? 'black' : 'silver' }}>{item.Email}</span></td>
+                                <td><span style={{ color: item.status === 'active' ? 'black' : 'silver' }}>{item.Website}</span></td>
+                                <td className='text-center'><span style={{ color: item.status === 'active' ? 'black' : 'silver' }}>{item.emails_sent}</span></td>
+                                <td>
+                                    <span
+                                        style={{ color: item.status === 'active' ? 'green' : 'silver', cursor: 'pointer' }}
+                                        onClick={() => handleToggleSingleActivate(item.id)}
+                                    >
+                                        {item.status}
+                                    </span>
+                                </td>
+                            </tr>
+                            {item.id === selectedRowId && (
+                                <tr>
+                                    <td colSpan="7">
+    {item.id === selectedRowId && (
+        editingNoteId === item.id ? (
+            <div>
+                <input
+                    type="text"
+                    value={editedNote}
+                    onChange={(e) => setEditedNote(e.target.value)}
+                />
+                <button onClick={() => saveEditedNote(item.id)}>Save</button>
+            </div>
+        ) : (
+            <div onClick={() => handleEditNote(item.id, item.Note)}>{item.Note}</div>
+        )
+    )}
+</td>
+                                </tr>
+                            )}
+                        </React.Fragment>
                     ))}
                 </tbody>
             </table>

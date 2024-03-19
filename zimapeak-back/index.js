@@ -31,16 +31,32 @@ db.connect((err) => {
   console.log('MySQL connected...');
 });
 
-// Register API
 app.post('/register', (req, res) => {
   const { username, email, fullname, role, password } = req.body;
 
-  const sql = 'INSERT INTO users (username, email, fullname, role, password) VALUES (?, ?, ?, ?, ?)';
-  db.query(sql, [username, email, fullname, role, password], (err, result) => {
-    if (err) {
-      res.status(500).json({ error: err.message });
+  // Check if username or email already exists in the database
+  const checkQuery = 'SELECT COUNT(*) AS count FROM users WHERE username = ? OR email = ?';
+  db.query(checkQuery, [username, email], (checkErr, checkResult) => {
+    if (checkErr) {
+      res.status(500).json({ error: checkErr.message });
     } else {
-      res.status(200).json({ message: 'User registered successfully!' });
+      const { count } = checkResult[0];
+      if (count > 0) {
+        res.status(400).json({ error: 'Username or email already exists.' });
+      } else {
+        // Generate a unique ID for the user
+        const id = uuid.v4();
+
+        // Insert the new user into the database
+        const insertQuery = 'INSERT INTO users (id, username, email, fullname, role, password) VALUES (?, ?, ?, ?, ?, ?)';
+        db.query(insertQuery, [id, username, email, fullname, role, password], (insertErr, insertResult) => {
+          if (insertErr) {
+            res.status(500).json({ error: insertErr.message });
+          } else {
+            res.status(200).json({ message: 'User registered successfully!' });
+          }
+        });
+      }
     }
   });
 });
@@ -63,11 +79,13 @@ app.post('/login', (req, res) => {
 
 // Fetch table data API
 app.get('/data', (req, res) => {
-  let sql = 'SELECT id, Name, Phone, Email, Website, status, date_added, emails_sent FROM Contacts';
+  let sql = 'SELECT id, Name, Phone, Email, Website, status, date_added, emails_sent, Note FROM Contacts';
 
   // Check if filterOption and startDate query parameters are provided
-  const { filterOption, startDate } = req.query;
-  if (filterOption && startDate) {
+  const { filterOption, status } = req.query;
+  let whereClause = '';
+
+  if (filterOption) {
     let filterCondition = '';
     switch (filterOption) {
       case 'lastHour':
@@ -87,8 +105,20 @@ app.get('/data', (req, res) => {
     }
 
     if (filterCondition) {
-      sql += ` WHERE ${filterCondition}`;
+      whereClause = `WHERE ${filterCondition}`;
     }
+  }
+
+  if (status) {
+    if (whereClause) {
+      whereClause += ` AND status = '${status}'`;
+    } else {
+      whereClause = `WHERE status = '${status}'`;
+    }
+  }
+
+  if (whereClause) {
+    sql += ` ${whereClause}`;
   }
 
   db.query(sql, (err, result) => {
@@ -99,6 +129,8 @@ app.get('/data', (req, res) => {
     }
   });
 });
+
+
 
 
 
@@ -177,41 +209,52 @@ app.post('/addContact', async (req, res) => {
 
 app.put('/update', (req, res) => {
   try {
-      const { ids, ...updates } = req.body;
+    const { ids, Note, ...updates } = req.body;
 
-      if (!ids || Object.keys(updates).length === 0) {
-          return res.status(400).json({ error: 'IDs and updates are required' });
+    if (!ids || (Object.keys(updates).length === 0 && Note === undefined)) {
+      return res.status(400).json({ error: 'IDs or updates are required' });
+    }
+
+    let sql = 'UPDATE Contacts SET ';
+    const values = [];
+
+    // Construct the SET clause dynamically based on the updates object
+    Object.keys(updates).forEach((key, index) => {
+      if (index > 0) {
+        sql += ', ';
       }
+      sql += `${key} = ?`;
+      values.push(updates[key]);
+    });
 
-      let sql = 'UPDATE Contacts SET ';
-      const values = [];
+    // Add Note to SET clause if it's provided in the request body
+    if (Note !== undefined) {
+      if (Object.keys(updates).length > 0) {
+        sql += ', ';
+      }
+      sql += `Note = ?`;
+      values.push(Note);
+    }
 
-      // Construct the SET clause dynamically based on the updates object
-      Object.keys(updates).forEach((key, index) => {
-          if (index > 0) {
-              sql += ', ';
-          }
-          sql += `${key} = ?`;
-          values.push(updates[key]);
-      });
+    sql += ' WHERE id IN (?)';
+    values.push(ids);
 
-      sql += ' WHERE id IN (?)';
-      values.push(ids);
-
-      db.query(sql, values, (err, result) => {
-          if (err) {
-              console.error('Error updating entries:', err.message);
-              return res.status(500).json({ error: 'Error updating entries', details: err.message });
-          } else {
-              console.log('Entries updated successfully');
-              return res.status(200).json({ message: 'Entries updated successfully' });
-          }
-      });
+    db.query(sql, values, (err, result) => {
+      if (err) {
+        console.error('Error updating entries:', err.message);
+        return res.status(500).json({ error: 'Error updating entries', details: err.message });
+      } else {
+        console.log('Entries updated successfully');
+        return res.status(200).json({ message: 'Entries updated successfully' });
+      }
+    });
   } catch (error) {
-      console.error('Error updating entries:', error.message);
-      return res.status(500).json({ error: 'Error updating entries', details: error.message });
+    console.error('Error updating entries:', error.message);
+    return res.status(500).json({ error: 'Error updating entries', details: error.message });
   }
 });
+
+
 
 
 

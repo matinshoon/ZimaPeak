@@ -1,10 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-
 import { logout } from '../AuthSlice';
 
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faRightFromBracket } from '@fortawesome/free-solid-svg-icons';
+
 const Navbar = () => {
+  const [isMenuOpen, setMenuOpen] = useState(false);
+  const loggedInUser = useSelector(state => state.auth.fullname);
+
   const dispatch = useDispatch();
   
   const handleLogout = () => {
@@ -13,19 +18,24 @@ const Navbar = () => {
   const isAuthenticated = useSelector(state => state.auth.isAuthenticated);
   const userRole = useSelector(state => state.auth.role);
 
+  const toggleMenu = () => {
+    setMenuOpen(!isMenuOpen);
+  };
+
   return (
     <nav className="justify-content-around navbar navbar-expand-lg navbar-light bg-light">
-      <div className="container ">
+      <div className="container">
         {isAuthenticated ? (
           <Link className="navbar-brand" to="/">ZimaPeak</Link>
         ) : (
           <div className="col-12 text-center">ZimaPeak</div>
         )}
-        {/* <button className="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-          <span className="navbar-toggler-icon"></span>
-        </button> */}
 
-        <div className="collapse navbar-collapse justify-content-between" id="navbarSupportedContent">
+        <button className="navbar-toggler" type="button" aria-label="Toggle navigation" onClick={toggleMenu}>
+          <span className="navbar-toggler-icon"></span>
+        </button>
+
+        <div className={`collapse navbar-collapse justify-content-between ${isMenuOpen ? 'show' : ''}`} id="navbarSupportedContent">
           {isAuthenticated && (
             <ul className="navbar-nav mr-auto">
               {userRole === 'admin' && (
@@ -38,6 +48,9 @@ const Navbar = () => {
                   </li>
                   <li className="nav-item">
                   <Link className="nav-link" to="/email">Email</Link>
+                  </li>
+                  <li className="nav-item">
+                  <Link className="nav-link" to="/adduser">Register</Link>
                   </li>
                 </>
               )}
@@ -59,17 +72,11 @@ const Navbar = () => {
               {/* Add other authenticated menu items here */}
             </ul>
           )}
-          {!isAuthenticated && (
-            <ul className="navbar-nav ml-auto">
-              <li className="nav-item">
-                {/* Add non-authenticated menu items here */}
-              </li>
-            </ul>
-          )}
           {isAuthenticated && (
-            <ul className="navbar-nav ml-auto d-flex justify-content-end">
+            <ul className="navbar-nav ml-auto d-flex align-items-center">
               {/* Add profile, settings, and search icons for authenticated users */}
-              <button className='btn btn-link text-danger text-decoration-none' onClick={handleLogout}>Logout</button>
+              <li className='mx-5'>Hello {loggedInUser}</li>
+              <li type='button' className='link-danger text-decoration-none' onClick={handleLogout}>Logout<FontAwesomeIcon className='mx-1' icon={faRightFromBracket} /></li>
             </ul>
           )}
         </div>

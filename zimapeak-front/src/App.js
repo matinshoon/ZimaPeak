@@ -1,4 +1,3 @@
-// App.js
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useSelector } from 'react-redux';
@@ -11,9 +10,9 @@ import Email from './panel/Email';
 
 import MemberDashboard from './panel/User/UserDashboard';
 import AdminDashboard from './panel/Admin/AdminDashboard';
+import Register from './panel/Admin/RegisterUser';
 
 function App() {
-
   const userRole = useSelector(state => state.auth.role);
 
   return (
@@ -29,9 +28,11 @@ function App() {
               {userRole === 'user' && <MemberDashboard />}
             </ProtectedRoute>
           } />
-
           <Route path="/contacts" element={<ProtectedRoute><Contacts /></ProtectedRoute>} />
           <Route path="/email" element={<ProtectedRoute><Email /></ProtectedRoute>} />
+          {userRole === 'admin' && (
+            <Route path="/adduser" element={<ProtectedRoute><Register /></ProtectedRoute>} />
+          )}
         </Routes>
       </div>
     </Router>
