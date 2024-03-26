@@ -13,26 +13,28 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
     const [actionToConfirm, setActionToConfirm] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
     const [filterOption, setFilterOption] = useState('');
-    const [showActiveOnly, setShowActiveOnly] = useState(false);
+    const [showActiveOnly, setShowActiveOnly] = useState(true);
     const [selectedItem, setSelectedItem] = useState('All Times');
     const [selectedRowId, setSelectedRowId] = useState(null); // State to track the selected row ID
     const [editingNoteId, setEditingNoteId] = useState(null); // State to track the ID of the note being edited
     const [editedNote, setEditedNote] = useState('');
 
+    const baseUrl = process.env.REACT_APP_BASE_URL;
+    
     const handleEditNote = (id, note) => {
         setEditingNoteId(id);
         setEditedNote(note);
     };
-    
+
     // Function to save the edited note
     const saveEditedNote = async (id) => {
         try {
             // Send a PUT request to update the note in the backend
-            await axios.put('http://localhost:3000/update', {
+            await axios.put(`${baseUrl}/update`, {
                 ids: [id],
                 Note: editedNote // Pass the edited note value
             });
-    
+
             // Update the table data with the modified note
             const updatedData = tableData.map((item) => {
                 if (item.id === id) {
@@ -43,7 +45,7 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
                 }
                 return item;
             });
-    
+
             setTableData(updatedData);
             setEditingNoteId(null); // Reset editing state
         } catch (error) {
@@ -62,7 +64,7 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
 
     const fetchData = async () => {
         try {
-            let url = 'http://localhost:3000/data';
+            let url = `${baseUrl}/data`;
 
             // Modify the URL based on the selected filter option
             if (filterOption) {
@@ -139,7 +141,7 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
             }
 
             // Send a DELETE request to the backend to delete selected items
-            await axios.delete('http://localhost:3000/delete', {
+            await axios.delete(`${baseUrl}/delete`, {
                 data: { ids: selectedItems }
             });
 
@@ -172,7 +174,7 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
             setTableData(updatedData);
 
             // Send a PUT request to update the status of the item in the backend
-            await axios.put('http://localhost:3000/update', {
+            await axios.put(`${baseUrl}/update`, {
                 ids: [id],
                 status: updatedStatus
             });
@@ -199,7 +201,7 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
             setTableData(updatedData);
 
             // Send a PUT request to update the status of selected items in the backend
-            await axios.put('http://localhost:3000/update', {
+            await axios.put(`${baseUrl}/update`, {
                 ids: selectedItems,
                 status: selectedItems.map((id) => {
                     const currentItem = updatedData.find((item) => item.id === id);
@@ -240,7 +242,7 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
             <div className="d-flex justify-content-between mb-3">
                 <div className='col-1'>
                     <Dropdown>
-                        <Dropdown.Toggle variant="secondary" id="dropdown-basic">
+                        <Dropdown.Toggle className='link-secondary' variant="none" id="dropdown-basic">
                             {selectedItem}
                         </Dropdown.Toggle>
 
@@ -321,21 +323,21 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
                             {item.id === selectedRowId && (
                                 <tr>
                                     <td colSpan="7">
-    {item.id === selectedRowId && (
-        editingNoteId === item.id ? (
-            <div>
-                <input
-                    type="text"
-                    value={editedNote}
-                    onChange={(e) => setEditedNote(e.target.value)}
-                />
-                <button onClick={() => saveEditedNote(item.id)}>Save</button>
-            </div>
-        ) : (
-            <div onClick={() => handleEditNote(item.id, item.Note)}>{item.Note}</div>
-        )
-    )}
-</td>
+                                        {item.id === selectedRowId && (
+                                            editingNoteId === item.id ? (
+                                                <div>
+                                                    <input
+                                                        type="text"
+                                                        value={editedNote}
+                                                        onChange={(e) => setEditedNote(e.target.value)}
+                                                    />
+                                                    <button onClick={() => saveEditedNote(item.id)}>Save</button>
+                                                </div>
+                                            ) : (
+                                                <div onClick={() => handleEditNote(item.id, item.Note)}>{item.Note}</div>
+                                            )
+                                        )}
+                                    </td>
                                 </tr>
                             )}
                         </React.Fragment>

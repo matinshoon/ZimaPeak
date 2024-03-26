@@ -16,7 +16,7 @@ const Contacts = () => {
 
   const fetchData = async () => {
     try {
-      const response = await axios.get('http://localhost:3000/data');
+      const response = await axios.get(`${baseUrl}/data`);
       return response.data;
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -33,7 +33,7 @@ const Contacts = () => {
       const formData = new FormData();
       formData.append('file', file);
 
-      await axios.post('http://localhost:3000/upload', formData, {
+      await axios.post(`${baseUrl}/upload`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
@@ -51,6 +51,8 @@ const Contacts = () => {
     }
   };
 
+  const baseUrl = process.env.REACT_APP_BASE_URL;
+
   const handleManualSubmit = async (e) => {
     e.preventDefault(); // Prevent default form submission behavior
 
@@ -60,7 +62,7 @@ const Contacts = () => {
     const website = e.target.elements.website.value;
 
     try {
-      await axios.post('http://localhost:3000/addcontact', {
+      await axios.post(`${baseUrl}/addcontact`, {
         Name: name,
         Phone: phone,
         Email: email,
@@ -99,30 +101,24 @@ const Contacts = () => {
   return (
     <div className="container mt-5">
       <div className='d-flex col-12 w-full justify-content-center aligh-items-center'>
-      <button className="btn link-primary" onClick={toggleUploadFormVisibility}>
-            {showUploadForm ? "Contatcs Added" : "+ Add Contacts"}
-          </button>
+        <button className="btn link-primary" onClick={toggleUploadFormVisibility}>
+          {showUploadForm ? "- Close" : "+ Add Contacts"}
+        </button>
       </div>
       {showUploadForm && (
         <div className="row justify-content-center">
           <div className="col-md-6">
-            <div className="card">
-              <div className="card-header">Upload Google Sheet Data</div>
-              <div className="card-body">
-                <div className="form-group d-flex align-items-center">
-                  <div className="input-group">
+            <div className="card h-100">
+              <div className="card-header text-center">Upload .xlsx File</div>
+              <div className="card-body d-flex flex-column justify-content-between align-items-center">
+                <div className="form-group d-flex justify-content-center align-items-center">
                     <div className="custom-file">
-                      <input
-                        type="file"
-                        className="custom-file-input"
-                        id="file"
-                        accept=".xlsx"
-                        onChange={handleFileChange}
-                      />
-                    </div>
+                      <div class="input-group">
+                        <input type="file" class="form-control" id="file" accept=".xlsx" onChange={handleFileChange}/>
+                      </div>
                   </div>
-                  <button className="btn btn-primary" onClick={handleSubmit}>Upload</button>
                 </div>
+                <button className="btn btn-primary col-md-10" onClick={handleSubmit}>Upload</button>
                 {uploadSuccess && (
                   <div className="alert alert-success" role="alert">
                     Data successfully uploaded!
@@ -133,7 +129,7 @@ const Contacts = () => {
           </div>
           <div className="col-md-6">
             <div className="card">
-              <div className="card-header">Add Contacts Manually</div>
+              <div className="card-header text-center">Add Contacts Manually</div>
               <div className="row justify-content-center">
                 <div className="col-md-10 my-3">
                   <form onSubmit={handleManualSubmit}>
@@ -156,12 +152,12 @@ const Contacts = () => {
                     <button className="btn btn-primary col-12 mt-3">Add</button>
                   </form>
                   {manualAddSuccess && (
-        <div className="mt-3">
-          <div className="alert alert-success" role="alert">
-            Contact added successfully!
-          </div>
-        </div>
-      )}
+                    <div className="mt-3">
+                      <div className="alert alert-success" role="alert">
+                        Contact added successfully!
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -171,7 +167,7 @@ const Contacts = () => {
       )}
       <div className="mt-5">
         <div className="col-12">
-        <ContactsTable reloadTable={reloadTable} onEmailsSelected={() => {}} />
+          <ContactsTable reloadTable={reloadTable} onEmailsSelected={() => { }} />
         </div>
       </div>
     </div>

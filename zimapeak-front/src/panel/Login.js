@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { login } from '../AuthSlice';
 
+const baseUrl = process.env.REACT_APP_BASE_URL;
+
 const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -19,16 +21,16 @@ const Login = () => {
 
   const handleLogin = async () => {
     try {
-      const response = await fetch('http://localhost:3000/login', {
+      const response = await fetch(`${baseUrl}/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ username, password }),
       });
-
+  
       const data = await response.json();
-
+  
       if (response.ok && data.user) {
         console.log('Login successful:', data.user);
         setErrorMessage('');
@@ -39,13 +41,14 @@ const Login = () => {
         
         navigate('/dashboard');
       } else {
-        setErrorMessage('Invalid username or password');
+        setErrorMessage(data.message); // Set error message from response
       }
     } catch (error) {
       console.error('Error during login:', error);
       setErrorMessage('An error occurred during login');
     }
   };
+  
 
   return (
     <div className="container mt-5">

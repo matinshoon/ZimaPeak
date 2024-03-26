@@ -11,6 +11,7 @@ const Register = () => {
   });
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const baseUrl = process.env.REACT_APP_BASE_URL;
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -19,7 +20,7 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('http://localhost:3000/register', formData);
+      const response = await axios.post(`${baseUrl}/register`, formData);
       console.log(response.data);
       // Handle success, redirect user or show a success message
       setSuccessMessage(response.data.message);
@@ -39,11 +40,10 @@ const Register = () => {
   };
 
   return (
-    <div className="container mt-5">
       <div className="row justify-content-center">
-        <div className="col-md-6">
+        <div className="col-md-12">
           <div className="card">
-            <div className="card-header">Register</div>
+            <div className="card-header text-center">Register a new User</div>
             <div className="card-body">
               {errorMessage && <div className="alert alert-danger">{errorMessage}</div>}
               {successMessage && <div className="alert alert-success">{successMessage}</div>}
@@ -115,7 +115,6 @@ const Register = () => {
           </div>
         </div>
       </div>
-    </div>
   );
 };
 

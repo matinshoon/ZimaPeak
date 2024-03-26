@@ -1,25 +1,70 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../AuthSlice';
-
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faRightFromBracket } from '@fortawesome/free-solid-svg-icons';
+import axios from 'axios';
+import UserDropdown from './UserDropdown';
 
 const Navbar = () => {
   const [isMenuOpen, setMenuOpen] = useState(false);
+  const [userStatus, setUserStatus] = useState(null);
   const loggedInUser = useSelector(state => state.auth.fullname);
-
   const dispatch = useDispatch();
-  
-  const handleLogout = () => {
-    dispatch(logout());
-  };
   const isAuthenticated = useSelector(state => state.auth.isAuthenticated);
   const userRole = useSelector(state => state.auth.role);
+  const [onlineUsers, setOnlineUsers] = useState([]);
 
   const toggleMenu = () => {
     setMenuOpen(!isMenuOpen);
+  };
+
+  const handleLogout = () => {
+    dispatch(logout());
+  };
+
+  useEffect(() => {
+    fetchOnlineUsers();
+    fetchUserStatus();
+  }, []);
+
+  const fetchUserStatus = async () => {
+    try {
+      const sessionKey = localStorage.getItem('sessionKey');
+      if (sessionKey) {
+        const response = await axios.get(`${baseUrl}/users/status?id=${sessionKey}`);
+        setUserStatus(response.data.status);
+      }
+    } catch (error) {
+      console.error('Error fetching user status:', error);
+    }
+  };
+
+  const updateStatus = async (status) => {
+    try {
+      const sessionKey = localStorage.getItem('sessionKey');
+      if (sessionKey) {
+        await axios.put(`${baseUrl}/users/updateStatus?id=${sessionKey}`, { status });
+        setUserStatus(status);
+        // Fetch online users after updating status
+        fetchOnlineUsers();
+      }
+    } catch (error) {
+      console.error('Error updating user status:', error);
+    }
+  };
+
+  const baseUrl = process.env.REACT_APP_BASE_URL;
+
+  const fetchOnlineUsers = async () => {
+    try {
+      const response = await axios.get(`${baseUrl}/users/status`);
+      // const onlineUsersData = response.data.filter(user => user.status === 'online');
+      const onlineUsersData = response.data.filter(user => user.status === 'online' || user.status === 'away');
+
+      setOnlineUsers(onlineUsersData);
+    } catch (error) {
+      console.error('Error fetching online users:', error);
+    }
   };
 
   return (
@@ -47,10 +92,10 @@ const Navbar = () => {
                     <Link className="nav-link" to="/contacts">Contacts</Link>
                   </li>
                   <li className="nav-item">
-                  <Link className="nav-link" to="/email">Email</Link>
+                    <Link className="nav-link" to="/Compose">Compose</Link>
                   </li>
                   <li className="nav-item">
-                  <Link className="nav-link" to="/adduser">Register</Link>
+                    <Link className="nav-link" to="/emails">Emails</Link>
                   </li>
                 </>
               )}
@@ -64,19 +109,26 @@ const Navbar = () => {
                     <Link className="nav-link" to="/contacts">Contacts</Link>
                   </li>
                   <li className="nav-item">
-                  <Link className="nav-link" to="/email">Email</Link>
+                    <Link className="nav-link" to="/Compose">Compose</Link>
+                  </li>
+                  <li className="nav-item">
+                    <Link className="nav-link" to="/emails">Emails</Link>
                   </li>
                 </>
               )}
-
-              {/* Add other authenticated menu items here */}
             </ul>
           )}
           {isAuthenticated && (
             <ul className="navbar-nav ml-auto d-flex align-items-center">
-              {/* Add profile, settings, and search icons for authenticated users */}
-              <li className='mx-5'>Hello {loggedInUser}</li>
-              <li type='button' className='link-danger text-decoration-none' onClick={handleLogout}>Logout<FontAwesomeIcon className='mx-1' icon={faRightFromBracket} /></li>
+              <li className="nav-item dropdown">
+                <UserDropdown
+                  userStatus={userStatus}
+                  onlineUsers={onlineUsers}
+                  loggedInUser={loggedInUser}
+                  updateStatus={updateStatus}
+                  handleLogout={handleLogout}
+                />
+              </li>
             </ul>
           )}
         </div>

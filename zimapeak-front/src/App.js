@@ -6,11 +6,11 @@ import Login from './panel/Login';
 import ProtectedRoute from './ProtectedRoute';
 
 import Contacts from './panel/Contacts';
-import Email from './panel/Email';
+import Compose from './panel/Compose';
+import Emails from './panel/Emails';
 
 import MemberDashboard from './panel/User/UserDashboard';
 import AdminDashboard from './panel/Admin/AdminDashboard';
-import Register from './panel/Admin/RegisterUser';
 
 function App() {
   const userRole = useSelector(state => state.auth.role);
@@ -29,9 +29,10 @@ function App() {
             </ProtectedRoute>
           } />
           <Route path="/contacts" element={<ProtectedRoute><Contacts /></ProtectedRoute>} />
-          <Route path="/email" element={<ProtectedRoute><Email /></ProtectedRoute>} />
+          <Route path="/compose" element={<ProtectedRoute><Compose /></ProtectedRoute>} />
+          <Route path="/emails" element={<ProtectedRoute><Emails /></ProtectedRoute>} />
           {userRole === 'admin' && (
-            <Route path="/adduser" element={<ProtectedRoute><Register /></ProtectedRoute>} />
+            <Route path="/" element={<ProtectedRoute></ProtectedRoute>} />
           )}
         </Routes>
       </div>

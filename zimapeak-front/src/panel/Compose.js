@@ -3,7 +3,7 @@ import axios from 'axios';
 import ContactsTable from '../components/ContactsTable';
 import { useSelector } from 'react-redux';
 
-const Email = () => {
+const Compose = () => {
     const loggedInEmail = useSelector(state => state.auth.email);
     const loggedInUser = useSelector(state => state.auth.fullname);
     const [emailData, setEmailData] = useState({
@@ -12,6 +12,7 @@ const Email = () => {
         message: ''
     });
     const [selectedContacts, setSelectedContacts] = useState([]);
+    const baseUrl = process.env.REACT_APP_BASE_URL;
 
     const handleInputChange = (e) => {
         setEmailData({ ...emailData, [e.target.name]: e.target.value });
@@ -39,12 +40,14 @@ const Email = () => {
         setEmailData({ ...emailData, to: emailsString });
     };
 
-
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
+            // Extract email addresses from the to field
+            const validToEmails = emailData.to.split(',').map(email => email.trim());
+    
             // Check if any contacts are selected
-            if (selectedContacts.length === 0) {
+            if (validToEmails.length === 0 || validToEmails.includes('')) {
                 alert('No contacts selected. Please select contacts before sending the email.');
                 return;
             }
@@ -66,7 +69,7 @@ const Email = () => {
             `;
     
             const formData = {
-                to: emailData.to,
+                to: validToEmails.join(', '), // Pass recipient email addresses as a single string
                 subject: emailData.subject,
                 message: emailData.message.replace(/\n/g, '<br>'), // Replace newline characters with <br> tags
                 footer: emailFooter,
@@ -74,7 +77,7 @@ const Email = () => {
             };
     
             // Send the POST request with form data
-            const response = await axios.post('http://localhost:3000/send-email', formData);
+            const response = await axios.post(`${baseUrl}/send-email`, formData);
     
             // Check if the response contains any error messages
             if (response.data.error) {
@@ -94,12 +97,11 @@ const Email = () => {
     
     
     
-
     const handleUpdateEmailsSent = async (ids) => {
         try {
             if (ids.length > 0) {
                 // Increment emails_sent for selected contacts
-                await axios.put('http://localhost:3000/update-emails-sent', {
+                await axios.put(`${baseUrl}/update-emails-sent`, {
                     ids: ids,
                 });
             }
@@ -139,4 +141,4 @@ const Email = () => {
     );
 };
 
-export default Email;
+export default Compose;
