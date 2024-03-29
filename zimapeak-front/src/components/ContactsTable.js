@@ -18,9 +18,11 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
     const [selectedRowId, setSelectedRowId] = useState(null); // State to track the selected row ID
     const [editingNoteId, setEditingNoteId] = useState(null); // State to track the ID of the note being edited
     const [editedNote, setEditedNote] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [contactsPerPage] = useState(50); // Set the number of contacts per page
 
     const baseUrl = process.env.REACT_APP_BASE_URL;
-    
+
     const handleEditNote = (id, note) => {
         setEditingNoteId(id);
         setEditedNote(note);
@@ -64,27 +66,46 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
 
     const fetchData = async () => {
         try {
+            // Retrieve sessionKey from local storage
+            const sessionKey = localStorage.getItem('sessionKey');
+    
             let url = `${baseUrl}/data`;
-
-            // Modify the URL based on the selected filter option
+    
+            // Construct query parameters
+            const queryParams = [];
+    
+            // Add filterOption parameter if it exists
             if (filterOption) {
-                // Remove the startDate part and handle it server-side
-                url += `?filterOption=${filterOption}`;
+                queryParams.push(`filterOption=${filterOption}`);
             }
-
+    
+            // Add status parameter if showActiveOnly is true
             if (showActiveOnly) {
-                // Append additional query parameter for showing active entities
-                url += '?status=active';
+                queryParams.push('status=active');
             }
-
+    
+            // Add trash parameter to exclude entities with trash value of 1
+            queryParams.push('trash=0');
+    
+            // Add added_by parameter to filter by sessionKey
+            queryParams.push(`added_by=${sessionKey}`);
+    
+            // Check if there are any query parameters to append
+            if (queryParams.length > 0) {
+                url += '?' + queryParams.join('&');
+            }
+    
             console.log('Fetching data from URL:', url);
-
+    
             const response = await axios.get(url);
             setTableData(response.data);
         } catch (error) {
             console.error('Error fetching data:', error);
         }
     };
+    
+    
+
 
     const handleFilterOption = (option) => {
         // Convert the option to lowercase
@@ -139,17 +160,27 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
             if (selectedItems.length === 0) {
                 return;
             }
-
-            // Send a DELETE request to the backend to delete selected items
-            await axios.delete(`${baseUrl}/delete`, {
-                data: { ids: selectedItems }
-            });
-
+    
+            // Get sessionKey from local storage
+            const username = localStorage.getItem('username');
+    
+            // Prepare the data object for the PUT request
+            const requestData = {
+                ids: selectedItems,
+                trash: '1',
+                deleted_by: username
+            };
+    
+            // Send a PUT request to update selected items
+            await axios.put(`${baseUrl}/update`, requestData);
+    
+            // Refetch data to update the table
             fetchData();
         } catch (error) {
-            console.error('Error deleting items:', error);
+            console.error('Error updating items:', error);
         }
     };
+    
 
     const handleToggleSingleActivate = async (id) => {
         try {
@@ -237,6 +268,23 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
     };
 
 
+    // Calculate indexes of contacts to be displayed on the current page
+    const indexOfLastContact = currentPage * contactsPerPage;
+    const indexOfFirstContact = indexOfLastContact - contactsPerPage;
+    const currentContacts = filteredTableData.slice(indexOfFirstContact, indexOfLastContact);
+
+    // Calculate total number of pages
+    const totalContacts = tableData.length;
+    const pageNumbers = [];
+    for (let i = 1; i <= Math.ceil(totalContacts / contactsPerPage); i++) {
+        pageNumbers.push(i);
+    }
+
+    // Function to handle page changes
+    const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
+
+
     return (
         <>
             <div className="d-flex justify-content-between mb-3">
@@ -296,7 +344,7 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
                     </tr>
                 </thead>
                 <tbody>
-                    {filteredTableData.map((item) => (
+                    {currentContacts.map((item) => (
                         <React.Fragment key={item.id}>
                             <tr onClick={() => handleRowClick(item.id)}>
                                 <td>
@@ -344,6 +392,17 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
                     ))}
                 </tbody>
             </table>
+            <nav>
+                <ul className="pagination">
+                    {pageNumbers.map((number) => (
+                        <li key={number} className="page-item">
+                            <button onClick={() => paginate(number)} className="page-link">
+                                {number}
+                            </button>
+                        </li>
+                    ))}
+                </ul>
+            </nav>
             {showConfirmationModal && (
                 <div className="modal d-block" tabIndex="-1" role="dialog">
                     <div className="modal-dialog" role="document">

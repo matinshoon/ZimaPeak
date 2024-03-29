@@ -8,6 +8,7 @@ const fs = require('fs');
 const uuid = require('uuid'); 
 const sgMail = require('@sendgrid/mail');
 const bcrypt = require('bcrypt');
+const dayjs = require('dayjs');
 
 require('dotenv').config();
 
@@ -118,64 +119,86 @@ app.post('/api/login', (req, res) => {
 
 // Fetch table data API
 app.get('/api/data', (req, res) => {
-  let sql = 'SELECT id, Name, Phone, Email, Website, status, DATE(date_added) AS date_added, emails_sent, Note FROM Contacts';
+  try {
+    // Construct the base SQL query
+    let sql = 'SELECT id, Name, Phone, Email, Website, status, DATE(date_added) AS date_added, emails_sent, Note, added_by, trash, deleted_by FROM Contacts';
 
-  // Check if filterOption, status, or date_added query parameters are provided
-  const { filterOption, status, date_added } = req.query;
-  let whereClause = '';
+    // Check if filterOption, status, date_added, added_by, date, or trash query parameters are provided
+    const { filterOption, status, date_added, added_by, date, trash } = req.query;
+    let whereClause = '';
 
-  if (filterOption) {
-    let filterCondition = '';
-    switch (filterOption) {
-      case 'lastHour':
-        filterCondition = `date_added >= NOW() - INTERVAL 1 HOUR`;
-        break;
-      case 'lastDay':
-        filterCondition = `date_added >= NOW() - INTERVAL 1 DAY`;
-        break;
-      case 'lastWeek':
-        filterCondition = `date_added >= NOW() - INTERVAL 1 WEEK`;
-        break;
-      case 'lastMonth':
-        filterCondition = `date_added >= NOW() - INTERVAL 1 MONTH`;
-        break;
-      default:
-        break;
+    // Apply filter based on filterOption
+    if (filterOption) {
+      let filterCondition = '';
+      switch (filterOption) {
+        case 'lastHour':
+          filterCondition = `date_added >= NOW() - INTERVAL 1 HOUR`;
+          break;
+        case 'lastDay':
+          filterCondition = `date_added >= NOW() - INTERVAL 1 DAY`;
+          break;
+        case 'lastWeek':
+          filterCondition = `date_added >= NOW() - INTERVAL 1 WEEK`;
+          break;
+        case 'lastMonth':
+          filterCondition = `date_added >= NOW() - INTERVAL 1 MONTH`;
+          break;
+        default:
+          break;
+      }
+
+      if (filterCondition) {
+        whereClause = `WHERE ${filterCondition}`;
+      }
     }
 
-    if (filterCondition) {
-      whereClause = `WHERE ${filterCondition}`;
+    // Apply status filter
+    if (status) {
+      whereClause = whereClause ? `${whereClause} AND status = '${status}'` : `WHERE status = '${status}'`;
     }
-  }
 
-  if (status) {
+    // Apply date_added filter
+    if (date_added) {
+      whereClause = whereClause ? `${whereClause} AND DATE(date_added) = '${date_added}'` : `WHERE DATE(date_added) = '${date_added}'`;
+    }
+
+    // Apply added_by filter
+    if (added_by) {
+      whereClause = whereClause ? `${whereClause} AND added_by = '${added_by}'` : `WHERE added_by = '${added_by}'`;
+    }
+
+    // Apply date filter
+    if (date) {
+      whereClause = whereClause ? `${whereClause} AND DATE(date_added) = '${date}'` : `WHERE DATE(date_added) = '${date}'`;
+    }
+
+    // Apply trash filter
+    if (trash) {
+      whereClause = whereClause ? `${whereClause} AND trash = '${trash}'` : `WHERE trash = '${trash}'`;
+    }
+
+    // Append whereClause to the SQL query if it exists
     if (whereClause) {
-      whereClause += ` AND status = '${status}'`;
-    } else {
-      whereClause = `WHERE status = '${status}'`;
+      sql += ` ${whereClause}`;
     }
-  }
 
-  if (date_added) {
-    if (whereClause) {
-      whereClause += ` AND DATE(date_added) = '${date_added}'`;
-    } else {
-      whereClause = `WHERE DATE(date_added) = '${date_added}'`;
-    }
-  }
-
-  if (whereClause) {
-    sql += ` ${whereClause}`;
-  }
-
-  db.query(sql, (err, result) => {
-    if (err) {
-      res.status(500).json({ error: err.message });
-    } else {
+    // Execute the SQL query
+    db.query(sql, (err, result) => {
+      if (err) {
+        console.error('Error fetching data:', err);
+        return res.status(500).json({ error: 'Failed to fetch data' });
+      }
       res.status(200).json(result);
-    }
-  });
+    });
+  } catch (error) {
+    console.error('Error fetching data:', error);
+    return res.status(500).json({ error: 'Failed to fetch data' });
+  }
 });
+
+
+
+
 
 
 
@@ -242,11 +265,11 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
     }
 
     // Generate unique IDs for each item
-    data = data.map(item => ({ ...item, id: uuid.v4(), status: 'active' }));
+    data = data.map(item => ({ ...item, id: uuid.v4(), status: 'active', added_by: req.query.added_by }));
 
-    const placeholders = data.map(() => '(?, ?, ?, ?, ?, ?)').join(', ');
-    const sql = `INSERT INTO Contacts (id, Name, Phone, Email, Website, status) VALUES ${placeholders}`;
-    const values = data.flatMap(row => [row.id, row.Name, row.Phone, row.Email, row.Website, row.status]);    
+    const placeholders = data.map(() => '(?, ?, ?, ?, ?, ?, ?)').join(', ');
+    const sql = `INSERT INTO Contacts (id, Name, Phone, Email, Website, status, added_by) VALUES ${placeholders}`;
+    const values = data.flatMap(row => [row.id, row.Name, row.Phone, row.Email, row.Website, row.status, row.added_by]);    
 
     console.log('Generated SQL:', sql); // Log the SQL query here
     console.log('Values:', values);
@@ -272,23 +295,24 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
 
 app.post('/api/addContact', async (req, res) => {
   try {
-      // Extract parameters from the request body
-      const { Name, Phone, Email, Website } = req.body;
+    // Extract parameters from the request body
+    const { Name, Phone, Email, Website, added_by } = req.body; // Add 'added_by' parameter
 
-      // Generate a unique ID for the contact
-      const id = uuid.v4();
+    // Generate a unique ID for the contact
+    const id = uuid.v4();
 
-      // Insert the new contact into the database
-      const result = await db.query('INSERT INTO Contacts (id, Name, Phone, Email, Website, status) VALUES (?, ?, ?, ?, ?, ?)', [id, Name, Phone, Email, Website, 'active']);
+    // Insert the new contact into the database with added_by information
+    const result = await db.query('INSERT INTO Contacts (id, Name, Phone, Email, Website, status, added_by) VALUES (?, ?, ?, ?, ?, ?, ?)', [id, Name, Phone, Email, Website, 'active', added_by]);
 
-      // Respond with success message
-      res.json({ success: true, message: 'Contact added successfully' });
+    // Respond with success message
+    res.json({ success: true, message: 'Contact added successfully' });
   } catch (error) {
-      // If an error occurs, respond with an error message
-      console.error('Error adding contact:', error);
-      res.status(500).json({ success: false, message: 'Error adding contact' });
+    // If an error occurs, respond with an error message
+    console.error('Error adding contact:', error);
+    res.status(500).json({ success: false, message: 'Error adding contact' });
   }
 });
+
 
 
 
@@ -557,13 +581,19 @@ app.get('/api/sendgrid-events', (req, res) => {
   });
 });
 
-
-
 app.get('/api/get-sent-emails', async (req, res) => {
   try {
-    // Query the database to retrieve sent emails
-    const query = 'SELECT * FROM sent_emails';
-    db.query(query, (err, result) => {
+    const { date } = req.query;
+    let query = 'SELECT * FROM sent_emails';
+    let params = [];
+
+    // If date parameter is provided, filter emails by date
+    if (date) {
+      query += ' WHERE DATE(sent_at) >= ?';
+      params.push(date);
+    }
+
+    db.query(query, params, (err, result) => {
       if (err) {
         console.error('Error fetching sent emails:', err);
         return res.status(500).json({ error: 'Failed to fetch sent emails' });
@@ -575,6 +605,8 @@ app.get('/api/get-sent-emails', async (req, res) => {
     return res.status(500).json({ error: 'Failed to fetch sent emails' });
   }
 });
+
+
 
 
 app.listen(port, () => {

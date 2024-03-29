@@ -17,12 +17,19 @@ const Emails = () => {
 
   const fetchEmails = async () => {
     try {
-      const response = await axios.get(`${baseUrl}/get-sent-emails`);
+      // Calculate the date 60 days ago
+      const pastDate = new Date();
+      pastDate.setDate(pastDate.getDate() - 60);
+      const formattedDate = pastDate.toISOString().split('T')[0]; // Get the date in 'YYYY-MM-DD' format
+  
+      // Make a GET request to fetch emails since the past 60 days
+      const response = await axios.get(`${baseUrl}/get-sent-emails?date=${formattedDate}`);
       setEmails(response.data);
     } catch (error) {
       console.error('Error fetching sent emails:', error);
     }
   };
+  
 
   // Get current emails
   const indexOfLastEmail = currentPage * emailsPerPage;
@@ -115,7 +122,7 @@ const Emails = () => {
         </li>
         {pageNumbers.map((number) => (
           <li key={number} className={`page-item ${currentPage === number ? 'active' : ''}`}>
-            <Button onClick={() => paginate(number)} className="page-link">
+            <Button onClick={() => paginate(number)} className="page-link mx-2">
               {number}
             </Button>
           </li>

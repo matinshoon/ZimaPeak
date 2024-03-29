@@ -5,13 +5,13 @@ import ContactsTable from '../components/ContactsTable';
 const Contacts = () => {
   const [file, setFile] = useState(null);
   const [uploadSuccess, setUploadSuccess] = useState(false);
-  const [manualAddSuccess, setManualAddSuccess] = useState(false); // State to track manual add success
-  const [reloadTable, setReloadTable] = useState(false); // State to trigger table reload
-  const [showUploadForm, setShowUploadForm] = useState(false); // State to control the visibility of the upload form
+  const [manualAddSuccess, setManualAddSuccess] = useState(false);
+  const [reloadTable, setReloadTable] = useState(false);
+  const [showUploadForm, setShowUploadForm] = useState(false);
 
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
-    setUploadSuccess(false); // Reset upload success state when a new file is selected
+    setUploadSuccess(false);
   };
 
   const fetchData = async () => {
@@ -20,32 +20,36 @@ const Contacts = () => {
       return response.data;
     } catch (error) {
       console.error('Error fetching data:', error);
-      return []; // Return empty array if there's an error
+      return [];
     }
   };
 
   const handleSubmit = async () => {
     try {
       if (!file) {
-        return; // No file selected
+        return;
       }
 
       const formData = new FormData();
       formData.append('file', file);
+      const user = localStorage.getItem('sessionKey'); // Retrieve logged-in user's name
 
       await axios.post(`${baseUrl}/upload`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
+        },
+        params: {
+          added_by: user // Pass logged-in user's name as a parameter
         }
       });
 
-      setUploadSuccess(true); // Set upload success state to true after successful upload
+      setUploadSuccess(true);
 
       setTimeout(() => {
-        setUploadSuccess(false); // Reset upload success state after 3 seconds
-      }, 3000); // 3000 milliseconds = 3 seconds
+        setUploadSuccess(false);
+      }, 3000);
 
-      setReloadTable(true); // Trigger table reload after successful upload
+      setReloadTable(true);
     } catch (error) {
       console.error('Error uploading file:', error);
     }
@@ -54,28 +58,26 @@ const Contacts = () => {
   const baseUrl = process.env.REACT_APP_BASE_URL;
 
   const handleManualSubmit = async (e) => {
-    e.preventDefault(); // Prevent default form submission behavior
+    e.preventDefault();
 
     const name = e.target.elements.name.value;
     const phone = e.target.elements.phone.value;
     const email = e.target.elements.email.value;
     const website = e.target.elements.website.value;
+    const user = localStorage.getItem('sessionKey'); // Retrieve logged-in user's name
 
     try {
       await axios.post(`${baseUrl}/addcontact`, {
         Name: name,
         Phone: phone,
         Email: email,
-        Website: website
+        Website: website,
+        added_by: user // Pass logged-in user's name
       });
 
-      // Show manual add success message
       setManualAddSuccess(true);
-
-      // Reload the table after successful submission
       setReloadTable(true);
 
-      // Hide the success message after 3 seconds
       setTimeout(() => {
         setManualAddSuccess(false);
       }, 3000);
@@ -84,7 +86,6 @@ const Contacts = () => {
     }
   };
 
-  // Fetch data on component mount and when reloadTable state changes
   useEffect(() => {
     async function fetchDataAndReloadTable() {
       await fetchData();
@@ -93,7 +94,6 @@ const Contacts = () => {
     fetchDataAndReloadTable();
   }, [reloadTable]);
 
-  // Function to toggle visibility of upload form
   const toggleUploadFormVisibility = () => {
     setShowUploadForm(!showUploadForm);
   };

@@ -55,10 +55,10 @@ const EmailReport = () => {
   };
 
   return (
-    <div className="card">
+    <div className="card h-100">
       <div className="card-body">
-        <h2 className="card-title text-primary">Email Report</h2>
-        <ul className="list-group list-group-flush">
+        <h2 className="card-title text-primary text-center">Email Report</h2>
+        <ul className="list-group list-group-flush h-75 d-flex flex-column justify-content-between text-center">
           <li className="list-group-item">Total Emails Sent Today: {emailsSentToday}</li>
           <li className="list-group-item">Total Emails Sent Yesterday: {emailsSentYesterday}</li>
           <li className="list-group-item">Total Emails Sent This Month: {emailsSentThisMonth}</li>

@@ -8,6 +8,7 @@ import ProtectedRoute from './ProtectedRoute';
 import Contacts from './panel/Contacts';
 import Compose from './panel/Compose';
 import Emails from './panel/Emails';
+import Trash from './panel/Trash';
 
 import MemberDashboard from './panel/User/UserDashboard';
 import AdminDashboard from './panel/Admin/AdminDashboard';
@@ -32,7 +33,7 @@ function App() {
           <Route path="/compose" element={<ProtectedRoute><Compose /></ProtectedRoute>} />
           <Route path="/emails" element={<ProtectedRoute><Emails /></ProtectedRoute>} />
           {userRole === 'admin' && (
-            <Route path="/" element={<ProtectedRoute></ProtectedRoute>} />
+            <Route path="/trash" element={<ProtectedRoute><Trash /></ProtectedRoute>} />
           )}
         </Routes>
       </div>

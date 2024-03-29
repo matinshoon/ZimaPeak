@@ -76,10 +76,10 @@ const ContactsReport = () => {
   
 
   return (
-    <div className="card">
+    <div className="card h-100">
     <div className="card-body">
-        <h2 className="card-title text-success">Contacts Report</h2>
-        <ul className="list-group list-group-flush">
+        <h2 className="card-title text-primary text-center">Contacts Report</h2>
+        <ul className="list-group list-group-flush h-75 d-flex flex-column justify-content-between text-center">
             <li className="list-group-item">Total Contacts: {allContacts.length}</li>
             <li className="list-group-item">Active Contacts: {activeContacts.length}</li>
             <li className="list-group-item">Inactive Contacts: {inactiveContacts.length}</li>

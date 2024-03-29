@@ -22,7 +22,7 @@ const Compose = () => {
         // Extract emails and IDs separately
         const selectedEmails = [];
         const selectedIds = [];
-    
+
         selectedIdsOrEmails.forEach(item => {
             if (typeof item === 'object') {
                 selectedEmails.push(item.email);
@@ -31,10 +31,10 @@ const Compose = () => {
                 selectedEmails.push(item);
             }
         });
-    
+
         // Update selectedContacts state
         setSelectedContacts(selectedIds);
-    
+
         // Update "To" field with selected emails separated by commas
         const emailsString = selectedEmails.join(', ');
         setEmailData({ ...emailData, to: emailsString });
@@ -45,13 +45,13 @@ const Compose = () => {
         try {
             // Extract email addresses from the to field
             const validToEmails = emailData.to.split(',').map(email => email.trim());
-    
+
             // Check if any contacts are selected
             if (validToEmails.length === 0 || validToEmails.includes('')) {
                 alert('No contacts selected. Please select contacts before sending the email.');
                 return;
             }
-    
+
             // Construct email message with footer
             const emailFooter = `
                 <br><br><a href="https://calendly.com/zimapeak_audit/30min" style="background-color: #28a745; color: #ffffff; text-decoration: none; padding: 15px 30px; border-radius: 5px; display: inline-block; margin-top: 20px; margin-bottom: 50px;">Let's have a chat!</a>
@@ -67,7 +67,7 @@ const Compose = () => {
                     </div>
                 </div>
             `;
-    
+
             const formData = {
                 to: validToEmails.join(', '), // Pass recipient email addresses as a single string
                 subject: emailData.subject,
@@ -75,18 +75,18 @@ const Compose = () => {
                 footer: emailFooter,
                 from: loggedInEmail
             };
-    
+
             // Send the POST request with form data
             const response = await axios.post(`${baseUrl}/send-email`, formData);
-    
+
             // Check if the response contains any error messages
             if (response.data.error) {
                 throw new Error(response.data.error);
             }
-    
+
             // If the email was sent successfully, update emails_sent for selected contacts
             await handleUpdateEmailsSent(selectedContacts);
-    
+
             // Alert after sending email and updating emails_sent
             alert('Email sent successfully!');
         } catch (error) {
@@ -94,9 +94,9 @@ const Compose = () => {
             alert('Failed to send email. Please try again later.');
         }
     };
-    
-    
-    
+
+
+
     const handleUpdateEmailsSent = async (ids) => {
         try {
             if (ids.length > 0) {
@@ -133,9 +133,10 @@ const Compose = () => {
                     </div>
                 </div>
                 {/* Right side */}
-                <div className="col-md-7 h-100 border-start p-4">
+                <div className="col-md-7 border-start p-4" style={{ maxHeight: '95vh', overflowY: 'auto' }}>
                     <ContactsTable onEmailsSelected={handleEmailsSelected} />
                 </div>
+
             </div>
         </div>
     );
