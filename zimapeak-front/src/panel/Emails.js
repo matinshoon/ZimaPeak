@@ -10,6 +10,7 @@ const Emails = () => {
   const maxEmailLength = 50; // Maximum length of the email to display
   const maxMessageLength = 100; // Maximum length of the message to display
   const baseUrl = process.env.REACT_APP_BASE_URL;
+  const userEmail = localStorage.getItem('email'); // Get the logged-in user's email address
 
   useEffect(() => {
     fetchEmails();
@@ -24,13 +25,17 @@ const Emails = () => {
   
       // Make a GET request to fetch emails since the past 60 days
       const response = await axios.get(`${baseUrl}/get-sent-emails?date=${formattedDate}`);
-      setEmails(response.data);
+  
+      // Filter emails to only include emails sent to the logged-in user
+      const userEmails = response.data.filter(email => email.from_email === userEmail);
+  
+      setEmails(userEmails);
     } catch (error) {
       console.error('Error fetching sent emails:', error);
     }
   };
   
-
+  
   // Get current emails
   const indexOfLastEmail = currentPage * emailsPerPage;
   const indexOfFirstEmail = indexOfLastEmail - emailsPerPage;

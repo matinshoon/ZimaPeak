@@ -32,7 +32,7 @@ const Contacts = () => {
 
       const formData = new FormData();
       formData.append('file', file);
-      const user = localStorage.getItem('sessionKey'); // Retrieve logged-in user's name
+      const user = localStorage.getItem('username'); // Retrieve logged-in user's name
 
       await axios.post(`${baseUrl}/upload`, formData, {
         headers: {
@@ -64,7 +64,7 @@ const Contacts = () => {
     const phone = e.target.elements.phone.value;
     const email = e.target.elements.email.value;
     const website = e.target.elements.website.value;
-    const user = localStorage.getItem('sessionKey'); // Retrieve logged-in user's name
+    const user = localStorage.getItem('username'); // Retrieve logged-in user's name
 
     try {
       await axios.post(`${baseUrl}/addcontact`, {
@@ -72,7 +72,7 @@ const Contacts = () => {
         Phone: phone,
         Email: email,
         Website: website,
-        added_by: user // Pass logged-in user's name
+        added_by: user
       });
 
       setManualAddSuccess(true);

@@ -66,45 +66,49 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
 
     const fetchData = async () => {
         try {
-            // Retrieve sessionKey from local storage
-            const sessionKey = localStorage.getItem('sessionKey');
-    
             let url = `${baseUrl}/data`;
-    
+
             // Construct query parameters
             const queryParams = [];
-    
+
             // Add filterOption parameter if it exists
             if (filterOption) {
                 queryParams.push(`filterOption=${filterOption}`);
             }
-    
+
             // Add status parameter if showActiveOnly is true
             if (showActiveOnly) {
                 queryParams.push('status=active');
             }
-    
+
             // Add trash parameter to exclude entities with trash value of 1
             queryParams.push('trash=0');
-    
-            // Add added_by parameter to filter by sessionKey
-            queryParams.push(`added_by=${sessionKey}`);
-    
+
             // Check if there are any query parameters to append
             if (queryParams.length > 0) {
                 url += '?' + queryParams.join('&');
             }
-    
+
             console.log('Fetching data from URL:', url);
-    
+
+            // Fetch data from the modified URL
             const response = await axios.get(url);
-            setTableData(response.data);
+            let filteredData = response.data;
+
+            // Check if the role in localStorage is admin
+            const role = localStorage.getItem('role');
+            if (role !== 'admin') {
+                // Filter data based on added_by matching sessionKey
+                const sessionKey = localStorage.getItem('sessionKey');
+                filteredData = filteredData.filter(item => item.added_by === sessionKey);
+            }
+
+            // Set the table data to the filtered data
+            setTableData(filteredData);
         } catch (error) {
             console.error('Error fetching data:', error);
         }
     };
-    
-    
 
 
     const handleFilterOption = (option) => {
@@ -160,27 +164,27 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
             if (selectedItems.length === 0) {
                 return;
             }
-    
+
             // Get sessionKey from local storage
             const username = localStorage.getItem('username');
-    
+
             // Prepare the data object for the PUT request
             const requestData = {
                 ids: selectedItems,
                 trash: '1',
                 deleted_by: username
             };
-    
+
             // Send a PUT request to update selected items
             await axios.put(`${baseUrl}/update`, requestData);
-    
+
             // Refetch data to update the table
             fetchData();
         } catch (error) {
             console.error('Error updating items:', error);
         }
     };
-    
+
 
     const handleToggleSingleActivate = async (id) => {
         try {
@@ -340,6 +344,7 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
                         <th>Email</th>
                         <th>Website</th>
                         <th>Emails Sent</th>
+                        {localStorage.getItem('role') === 'admin' && <th>Added By</th>}
                         <th>Status</th>
                     </tr>
                 </thead>
@@ -359,6 +364,10 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
                                 <td><span style={{ color: item.status === 'active' ? 'black' : 'silver' }}>{item.Email}</span></td>
                                 <td><span style={{ color: item.status === 'active' ? 'black' : 'silver' }}>{item.Website}</span></td>
                                 <td className='text-center'><span style={{ color: item.status === 'active' ? 'black' : 'silver' }}>{item.emails_sent}</span></td>
+                                {localStorage.getItem('role') === 'admin' && (
+                                    <td><span style={{ color: item.status === 'active' ? 'black' : 'silver' }}>{item.added_by}</span></td>
+                                )}
+
                                 <td>
                                     <span
                                         style={{ color: item.status === 'active' ? 'green' : 'silver', cursor: 'pointer' }}
