@@ -9,11 +9,14 @@ const uuid = require('uuid');
 const sgMail = require('@sendgrid/mail');
 const bcrypt = require('bcrypt');
 const dayjs = require('dayjs');
+const jwt = require('jsonwebtoken');
+
 
 require('dotenv').config();
 
 const app = express();
 const port = process.env.PORT;
+const jwtSecret = process.env.JWT_SECRET;
 
 // Middleware
 app.use(bodyParser.json());
@@ -21,21 +24,12 @@ app.use(cors());
 
 // MySQL Connection local
 const db = mysql.createConnection({
-  host: 'localhost',
-  port: '8889', // Update port if necessary
-  user: 'root',
-  password: 'root', // Change this to your MySQL root password
-  database: 'test' // Change this to your database name
+  host: process.env.DB_HOST,
+  port: process.env.DB_PORT,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_DATABASE
 });
-
-// MySQL Connection main
-// const db = mysql.createConnection({
-//   host: 'localhost',
-//   port: '3306',
-//   user: 'zimalxqv_panelAdmin',
-//   password: '9010mr9010@forca_mE', 
-//   database: 'zimalxqv_panel'
-// });
 
 db.connect((err) => {
   if (err) {
@@ -44,11 +38,31 @@ db.connect((err) => {
   console.log('MySQL connected...');
 });
 
+
+// Generate JWT token
+function generateToken(user) {
+  return jwt.sign({ id: user.id, username: user.username }, jwtSecret, { expiresIn: '8h' });
+}
+
+// Authentication Middleware
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (token == null) return res.sendStatus(401);
+
+  jwt.verify(token, jwtSecret, (err, user) => {
+    if (err) return res.sendStatus(403);
+    req.user = user;
+    next();
+  });
+}
+
+
 app.get('/api', (req, res) => {
   res.send('Hello dev!')
 })
 
-app.post('/api/register', (req, res) => {
+app.post('/api/register', authenticateToken, (req, res) => {
   const { username, email, fullname, role, password } = req.body;
 
   // Check if username or email already exists in the database
@@ -103,7 +117,9 @@ app.post('/api/login', (req, res) => {
           if (result[0].state !== 'active') {
             res.status(401).json({ message: 'User is not active' });
           } else {
-            res.status(200).json({ message: 'Login successful!', user: result[0] });
+            // Generate JWT token upon successful login
+            const token = generateToken(result[0]);
+            res.status(200).json({ message: 'Login successful!', user: result[0], token });
           }
         } else {
           res.status(401).json({ message: 'Invalid username or password' });
@@ -115,10 +131,8 @@ app.post('/api/login', (req, res) => {
   });
 });
 
-
-
 // Fetch table data API
-app.get('/api/data', (req, res) => {
+app.get('/api/data', authenticateToken, (req, res) => {
   try {
     // Construct the base SQL query
     let sql = 'SELECT id, Name, Phone, Email, Website, status, DATE(date_added) AS date_added, emails_sent, Note, added_by, trash, deleted_by FROM Contacts';
@@ -202,7 +216,7 @@ app.get('/api/data', (req, res) => {
 
 
 
-app.get('/api/users/status', (req, res) => {
+app.get('/api/users/status', authenticateToken, (req, res) => {
   const userId = req.query.id;
 
   // If the id parameter is provided, fetch the status of a single entity
@@ -247,7 +261,7 @@ app.get('/api/users/status', (req, res) => {
 const upload = multer({ dest: 'uploads/' });
 
 // API endpoint to handle file uploads and database insertion
-app.post('/api/upload', upload.single('file'), (req, res) => {
+app.post('/api/upload', authenticateToken, upload.single('file'), (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
@@ -293,7 +307,7 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
   }
 });
 
-app.post('/api/addContact', async (req, res) => {
+app.post('/api/addContact', authenticateToken, async (req, res) => {
   try {
     // Extract parameters from the request body
     const { Name, Phone, Email, Website, added_by } = req.body; // Add 'added_by' parameter
@@ -316,7 +330,7 @@ app.post('/api/addContact', async (req, res) => {
 
 
 
-app.put('/api/update', (req, res) => {
+app.put('/api/update', authenticateToken, (req, res) => {
   try {
     const { ids, Note, ...updates } = req.body;
 
@@ -369,7 +383,7 @@ app.put('/api/update', (req, res) => {
 
 
 // Delete API
-app.delete('/api/delete', (req, res) => {
+app.delete('/api/delete', authenticateToken, (req, res) => {
   const ids = req.body.ids;
 
   if (!ids || !Array.isArray(ids) || ids.length === 0) {
@@ -389,7 +403,7 @@ app.delete('/api/delete', (req, res) => {
 // Initialize SendGrid with your API key
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-app.post('/api/send-email', async (req, res) => {
+app.post('/api/send-email', authenticateToken, async (req, res) => {
   const { to, from, subject, message, footer } = req.body;
 
   if (!to || !from || !subject || !message) {
@@ -448,7 +462,7 @@ async function saveSentEmailToDatabase(to, from, subject, message, footer) {
 
 
 
-app.put('/api/update-emails-sent', (req, res) => {
+app.put('/api/update-emails-sent', authenticateToken, (req, res) => {
   try {
       const { ids } = req.body;
 
@@ -477,7 +491,7 @@ app.put('/api/update-emails-sent', (req, res) => {
 
 
 // Define an object to store user statuses
-app.put('/api/users/updateStatus', (req, res) => {
+app.put('/api/users/updateStatus', authenticateToken, (req, res) => {
   const userId = req.query.id;
   const newData = req.body;
 
@@ -514,7 +528,7 @@ app.put('/api/users/updateStatus', (req, res) => {
 
 
 
-app.get('/api/users', (req, res) => {
+app.get('/api/users', authenticateToken, (req, res) => {
   // Query the database to get all users
   const sql = 'SELECT * FROM users';
   db.query(sql, (err, result) => {
@@ -529,7 +543,7 @@ app.get('/api/users', (req, res) => {
 });
 
 // SendGrid event webhook notifications
-app.post('/api/sendgrid/webhook', (req, res) => {
+app.post('/api/sendgrid/webhook', authenticateToken, (req, res) => {
   const events = req.body;
 
   if (!events || !Array.isArray(events)) {
@@ -567,7 +581,7 @@ function saveEventToDatabase(event) {
 }
 
 
-app.get('/api/sendgrid-events', (req, res) => {
+app.get('/api/sendgrid-events', authenticateToken, (req, res) => {
   // Query the database to get all users
   const sql = 'SELECT * FROM sendgrid_events';
   db.query(sql, (err, result) => {
@@ -581,7 +595,7 @@ app.get('/api/sendgrid-events', (req, res) => {
   });
 });
 
-app.get('/api/get-sent-emails', async (req, res) => {
+app.get('/api/get-sent-emails', authenticateToken, async (req, res) => {
   try {
     const { date } = req.query;
     let query = 'SELECT * FROM sent_emails';
@@ -605,9 +619,6 @@ app.get('/api/get-sent-emails', async (req, res) => {
     return res.status(500).json({ error: 'Failed to fetch sent emails' });
   }
 });
-
-
-
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);

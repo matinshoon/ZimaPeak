@@ -6,13 +6,12 @@ const initialState = {
   fullname: localStorage.getItem('fullname') || null,
   sessionKey: localStorage.getItem('sessionKey') || null,
   role: localStorage.getItem('role') || null,
+  email: localStorage.getItem('email') || null,
 };
 
 export const authSlice = createSlice({
   name: 'auth',
-  
   initialState,
-  
   reducers: {
     login: (state, action) => {
       state.isAuthenticated = true;
@@ -24,6 +23,7 @@ export const authSlice = createSlice({
 
       localStorage.setItem('isAuthenticated', true);
       localStorage.setItem('username', action.payload.username);
+      localStorage.setItem('fullname', action.payload.fullname);
       localStorage.setItem('sessionKey', action.payload.sessionKey);
       localStorage.setItem('role', action.payload.role);
       localStorage.setItem('email', action.payload.email);

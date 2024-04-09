@@ -22,6 +22,8 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
     const [contactsPerPage] = useState(50); // Set the number of contacts per page
 
     const baseUrl = process.env.REACT_APP_BASE_URL;
+    const token = localStorage.getItem('token');
+
 
     const handleEditNote = (id, note) => {
         setEditingNoteId(id);
@@ -31,12 +33,14 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
     // Function to save the edited note
     const saveEditedNote = async (id) => {
         try {
-            // Send a PUT request to update the note in the backend
             await axios.put(`${baseUrl}/update`, {
                 ids: [id],
-                Note: editedNote // Pass the edited note value
+                Note: editedNote
+            }, {
+                headers: {
+                    Authorization: `Bearer ${token}` // Include token in the request headers
+                }
             });
-
             // Update the table data with the modified note
             const updatedData = tableData.map((item) => {
                 if (item.id === id) {
@@ -68,47 +72,44 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
         try {
             let url = `${baseUrl}/data`;
 
-            // Construct query parameters
             const queryParams = [];
 
-            // Add filterOption parameter if it exists
             if (filterOption) {
                 queryParams.push(`filterOption=${filterOption}`);
             }
 
-            // Add status parameter if showActiveOnly is true
             if (showActiveOnly) {
                 queryParams.push('status=active');
             }
 
-            // Add trash parameter to exclude entities with trash value of 1
             queryParams.push('trash=0');
 
-            // Check if there are any query parameters to append
             if (queryParams.length > 0) {
                 url += '?' + queryParams.join('&');
             }
 
             console.log('Fetching data from URL:', url);
 
-            // Fetch data from the modified URL
-            const response = await axios.get(url);
+            const response = await axios.get(url, {
+                headers: {
+                    Authorization: `Bearer ${token}` // Include token in the request headers
+                }
+            });
+
             let filteredData = response.data;
 
-            // Check if the role in localStorage is admin
             const role = localStorage.getItem('role');
             if (role !== 'admin') {
-                // Filter data based on added_by matching sessionKey
                 const sessionKey = localStorage.getItem('sessionKey');
                 filteredData = filteredData.filter(item => item.added_by === sessionKey);
             }
 
-            // Set the table data to the filtered data
             setTableData(filteredData);
         } catch (error) {
             console.error('Error fetching data:', error);
         }
     };
+
 
 
     const handleFilterOption = (option) => {
@@ -176,7 +177,11 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
             };
 
             // Send a PUT request to update selected items
-            await axios.put(`${baseUrl}/update`, requestData);
+            await axios.put(`${baseUrl}/update`, requestData, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
 
             // Refetch data to update the table
             fetchData();
@@ -212,7 +217,12 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
             await axios.put(`${baseUrl}/update`, {
                 ids: [id],
                 status: updatedStatus
+            }, {
+                headers: {
+                    Authorization: `Bearer ${token}` // Include token in the request headers
+                }
             });
+
         } catch (error) {
             console.error('Error toggling activation:', error);
         }
@@ -242,7 +252,12 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
                     const currentItem = updatedData.find((item) => item.id === id);
                     return currentItem.status;
                 })
+            }, {
+                headers: {
+                    Authorization: `Bearer ${token}` // Include token in the request headers
+                }
             });
+
         } catch (error) {
             console.error('Error toggling activation:', error);
         }

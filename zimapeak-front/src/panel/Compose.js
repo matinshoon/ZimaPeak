@@ -13,6 +13,7 @@ const Compose = () => {
     });
     const [selectedContacts, setSelectedContacts] = useState([]);
     const baseUrl = process.env.REACT_APP_BASE_URL;
+    const token = localStorage.getItem('token');
 
     const handleInputChange = (e) => {
         setEmailData({ ...emailData, [e.target.name]: e.target.value });
@@ -77,7 +78,12 @@ const Compose = () => {
             };
 
             // Send the POST request with form data
-            const response = await axios.post(`${baseUrl}/send-email`, formData);
+            const response = await axios.post(`${baseUrl}/send-email`, formData, {
+                headers: {
+                    Authorization: `Bearer ${token}` // Include token in the request headers
+                }
+            });
+            
 
             // Check if the response contains any error messages
             if (response.data.error) {
@@ -103,12 +109,17 @@ const Compose = () => {
                 // Increment emails_sent for selected contacts
                 await axios.put(`${baseUrl}/update-emails-sent`, {
                     ids: ids,
+                }, {
+                    headers: {
+                        Authorization: `Bearer ${token}` // Include token in the request headers
+                    }
                 });
             }
         } catch (error) {
             console.error('Error updating emails_sent:', error);
         }
     };
+    
 
     return (
         <div className="container-fluid full-height">

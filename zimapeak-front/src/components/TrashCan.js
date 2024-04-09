@@ -18,7 +18,8 @@ const Trash = ({ onEmailsSelected, onDelete, reloadTable }) => {
     const [currentPage, setCurrentPage] = useState(1);
     const [contactsPerPage] = useState(50); // Set the number of contacts per page
 
-    const baseUrl = process.env.REACT_APP_BASE_URL;
+      const baseUrl = process.env.REACT_APP_BASE_URL;
+  const token = localStorage.getItem('token');
 
     const handleRowClick = (id) => {
         setSelectedRowId(id === selectedRowId ? null : id); // Toggle selected row
@@ -32,14 +33,19 @@ const Trash = ({ onEmailsSelected, onDelete, reloadTable }) => {
     const fetchData = async () => {
         try {
             let url = `${baseUrl}/data?trash=1`; // Add query parameter to filter entities in trash
-
+    
             // Fetch data from the modified URL
-            const response = await axios.get(url);
+            const response = await axios.get(url, {
+                headers: {
+                    Authorization: `Bearer ${token}` // Include token in the request headers
+                }
+            });
             setTableData(response.data);
         } catch (error) {
             console.error('Error fetching data:', error);
         }
     };
+    
 
     const handleSelect = (id) => {
         if (id !== undefined) {
@@ -77,32 +83,40 @@ const Trash = ({ onEmailsSelected, onDelete, reloadTable }) => {
             if (selectedItems.length === 0) {
                 return;
             }
-
+    
             // Send a DELETE request to the backend to delete selected items
             await axios.delete(`${baseUrl}/delete`, {
-                data: { ids: selectedItems }
+                data: { ids: selectedItems },
+                headers: {
+                    Authorization: `Bearer ${token}` // Include token in the request headers
+                }
             });
-
+    
             fetchData();
         } catch (error) {
             console.error('Error deleting items:', error);
         }
     };
-
+    
     const handleReturn = async (id) => {
         try {
             // Send a PUT request to update the trash column to 0
             await axios.put(`${baseUrl}/update`, {
                 ids: [id],
                 trash: '0'
+            }, {
+                headers: {
+                    Authorization: `Bearer ${token}` // Include token in the request headers
+                }
             });
-
+    
             // Refetch data to update the table
             fetchData();
         } catch (error) {
             console.error('Error returning item from trash:', error);
         }
     };
+    
 
     const handleSearch = (event) => {
         setSearchQuery(event.target.value);

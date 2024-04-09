@@ -12,7 +12,8 @@ const UsersTable = () => {
         value: ''
     });
 
-    const baseUrl = process.env.REACT_APP_BASE_URL;
+      const baseUrl = process.env.REACT_APP_BASE_URL;
+  const token = localStorage.getItem('token');
 
     useEffect(() => {
         fetchUsers();
@@ -20,7 +21,11 @@ const UsersTable = () => {
 
     const fetchUsers = async () => {
         try {
-            const response = await axios.get(`${baseUrl}/users`);
+            const response = await axios.get(`${baseUrl}/users`, {
+                headers: {
+                    Authorization: `Bearer ${token}` // Include token in the request headers
+                }
+            });
             setUsers(response.data);
             setRefreshMessage('Data received successfully.');
             setTimeout(() => {
@@ -30,6 +35,7 @@ const UsersTable = () => {
             console.error('Error fetching users:', error);
         }
     };
+    
 
     const handleRefresh = () => {
         fetchUsers();
@@ -69,6 +75,10 @@ const UsersTable = () => {
             if (userId && field && value !== '') {
                 await axios.put(`${baseUrl}/users/updateStatus?id=${userId}`, {
                     [field]: value
+                }, {
+                    headers: {
+                        Authorization: `Bearer ${token}` // Include token in the request headers
+                    }
                 });
                 setEditableField({
                     userId: null,
@@ -81,6 +91,7 @@ const UsersTable = () => {
             console.error('Error updating user data:', error);
         }
     };
+    
 
     return (
         <>

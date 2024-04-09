@@ -9,6 +9,9 @@ const Contacts = () => {
   const [reloadTable, setReloadTable] = useState(false);
   const [showUploadForm, setShowUploadForm] = useState(false);
 
+  const baseUrl = process.env.REACT_APP_BASE_URL;
+  const token = localStorage.getItem('token');
+
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
     setUploadSuccess(false);
@@ -16,7 +19,11 @@ const Contacts = () => {
 
   const fetchData = async () => {
     try {
-      const response = await axios.get(`${baseUrl}/data`);
+      const response = await axios.get(`${baseUrl}/data`, {
+        headers: {
+          Authorization: `Bearer ${token}` // Include token in the request headers
+        }
+      });
       return response.data;
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -36,7 +43,8 @@ const Contacts = () => {
 
       await axios.post(`${baseUrl}/upload`, formData, {
         headers: {
-          'Content-Type': 'multipart/form-data'
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${token}` // Include token in the request headers
         },
         params: {
           added_by: user // Pass logged-in user's name as a parameter
@@ -55,8 +63,6 @@ const Contacts = () => {
     }
   };
 
-  const baseUrl = process.env.REACT_APP_BASE_URL;
-
   const handleManualSubmit = async (e) => {
     e.preventDefault();
 
@@ -73,6 +79,10 @@ const Contacts = () => {
         Email: email,
         Website: website,
         added_by: user
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}` // Include token in the request headers
+        }
       });
 
       setManualAddSuccess(true);
@@ -85,6 +95,7 @@ const Contacts = () => {
       console.error('Error adding contact manually:', error);
     }
   };
+
 
   useEffect(() => {
     async function fetchDataAndReloadTable() {
@@ -112,10 +123,10 @@ const Contacts = () => {
               <div className="card-header text-center">Upload .xlsx File</div>
               <div className="card-body d-flex flex-column justify-content-between align-items-center">
                 <div className="form-group d-flex justify-content-center align-items-center">
-                    <div className="custom-file">
-                      <div class="input-group">
-                        <input type="file" class="form-control" id="file" accept=".xlsx" onChange={handleFileChange}/>
-                      </div>
+                  <div className="custom-file">
+                    <div class="input-group">
+                      <input type="file" class="form-control" id="file" accept=".xlsx" onChange={handleFileChange} />
+                    </div>
                   </div>
                 </div>
                 <button className="btn btn-primary col-md-10" onClick={handleSubmit}>Upload</button>

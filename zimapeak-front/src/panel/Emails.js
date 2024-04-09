@@ -10,6 +10,7 @@ const Emails = () => {
   const maxEmailLength = 50; // Maximum length of the email to display
   const maxMessageLength = 100; // Maximum length of the message to display
   const baseUrl = process.env.REACT_APP_BASE_URL;
+  const token = localStorage.getItem('token');
   const userEmail = localStorage.getItem('email'); // Get the logged-in user's email address
 
   useEffect(() => {
@@ -18,24 +19,29 @@ const Emails = () => {
 
   const fetchEmails = async () => {
     try {
-      // Calculate the date 60 days ago
-      const pastDate = new Date();
-      pastDate.setDate(pastDate.getDate() - 60);
-      const formattedDate = pastDate.toISOString().split('T')[0]; // Get the date in 'YYYY-MM-DD' format
-  
-      // Make a GET request to fetch emails since the past 60 days
-      const response = await axios.get(`${baseUrl}/get-sent-emails?date=${formattedDate}`);
-  
-      // Filter emails to only include emails sent to the logged-in user
-      const userEmails = response.data.filter(email => email.from_email === userEmail);
-  
-      setEmails(userEmails);
+        // Calculate the date 60 days ago
+        const pastDate = new Date();
+        pastDate.setDate(pastDate.getDate() - 60);
+        const formattedDate = pastDate.toISOString().split('T')[0]; // Get the date in 'YYYY-MM-DD' format
+
+        // Make a GET request to fetch emails since the past 60 days
+        const response = await axios.get(`${baseUrl}/get-sent-emails?date=${formattedDate}`, {
+          headers: {
+              Authorization: `Bearer ${token}` // Include the token in the request headers
+          }
+      });
+
+        // Filter emails to only include emails sent to the logged-in user
+        const userEmail = localStorage.getItem('userEmail'); // Assuming userEmail is stored in localStorage
+        const userEmails = response.data.filter(email => email.from_email === userEmail);
+
+        setEmails(userEmails);
     } catch (error) {
-      console.error('Error fetching sent emails:', error);
+        console.error('Error fetching sent emails:', error);
     }
-  };
-  
-  
+};
+
+
   // Get current emails
   const indexOfLastEmail = currentPage * emailsPerPage;
   const indexOfFirstEmail = indexOfLastEmail - emailsPerPage;

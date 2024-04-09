@@ -6,48 +6,62 @@ import dayjs from 'dayjs';
 const UserReport = () => {
   const [userData, setUserData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const baseUrl = process.env.REACT_APP_BASE_URL;
+    const baseUrl = process.env.REACT_APP_BASE_URL;
+  const token = localStorage.getItem('token');
   
   useEffect(() => {
     const fetchUserData = async () => {
-      try {
-        // Get current date in EST timezone
-        const currentDate = dayjs().format('YYYY-MM-DD');
+        try {
+            // Get current date in EST timezone
+            const currentDate = dayjs().format('YYYY-MM-DD');
 
-        // Fetching user data
-        const usersResponse = await axios.get(`${baseUrl}/users`);
-        const users = usersResponse.data.filter(user => user.role === 'user');
+            // Fetching user data
+            const usersResponse = await axios.get(`${baseUrl}/users`, {
+                headers: {
+                    Authorization: `Bearer ${token}` // Include token in the request headers
+                }
+            });
+            const users = usersResponse.data.filter(user => user.role === 'user');
 
-        // Fetching contacts added data for the current day
-        const contactsResponse = await axios.get(`${baseUrl}/data?date=${currentDate}`);
-        const contactsData = contactsResponse.data;
+            // Fetching contacts added data for the current day
+            const contactsResponse = await axios.get(`${baseUrl}/data?date=${currentDate}`, {
+                headers: {
+                    Authorization: `Bearer ${token}` // Include token in the request headers
+                }
+            });
+            const contactsData = contactsResponse.data;
 
-        // Fetching emails sent data for the current day
-        const emailsResponse = await axios.get(`${baseUrl}/get-sent-emails?date=${currentDate}`);
-        const emailsData = emailsResponse.data;
+            // Fetching emails sent data for the current day
+            const emailsResponse = await axios.get(`${baseUrl}/get-sent-emails?date=${currentDate}`, {
+                headers: {
+                    Authorization: `Bearer ${token}` // Include token in the request headers
+                }
+            });
+            const emailsData = emailsResponse.data;
 
-        // Combine user data with contacts added and emails sent
-        const combinedData = users.map(user => {
-          const contactsAdded = contactsData.filter(contact => contact.added_by === user.id).length;
-          const emailsSent = emailsData.filter(email => email.from_email === user.email).length;
-          return {
-            name: user.fullname,
-            contactsAdded,
-            emailsSent
-          };
-        });
+            // Combine user data with contacts added and emails sent
+            const combinedData = users.map(user => {
+                const contactsAdded = contactsData.filter(contact => contact.added_by === user.id).length;
+                const emailsSent = emailsData.filter(email => email.from_email === user.email).length;
+                return {
+                    name: user.fullname,
+                    contactsAdded,
+                    emailsSent
+                };
+            });
 
-        // Update state with combined data
-        setUserData(combinedData);
-        setLoading(false);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        setLoading(false);
-      }
+            // Update state with combined data
+            setUserData(combinedData);
+            setLoading(false);
+        } catch (error) {
+            console.error('Error fetching data:', error);
+            setLoading(false);
+        }
     };
 
     fetchUserData();
-  }, []);
+}, [token]); // Add token to the dependency array
+
 
   return (
     <div>

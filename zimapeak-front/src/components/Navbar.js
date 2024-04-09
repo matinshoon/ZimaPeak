@@ -13,6 +13,8 @@ const Navbar = () => {
   const isAuthenticated = useSelector(state => state.auth.isAuthenticated);
   const userRole = useSelector(state => state.auth.role);
   const [onlineUsers, setOnlineUsers] = useState([]);
+  const baseUrl = process.env.REACT_APP_BASE_URL;
+  const token = localStorage.getItem('token');
 
   const toggleMenu = () => {
     setMenuOpen(!isMenuOpen);
@@ -29,43 +31,54 @@ const Navbar = () => {
 
   const fetchUserStatus = async () => {
     try {
-      const sessionKey = localStorage.getItem('sessionKey');
-      if (sessionKey) {
-        const response = await axios.get(`${baseUrl}/users/status?id=${sessionKey}`);
-        setUserStatus(response.data.status);
-      }
+        const sessionKey = localStorage.getItem('sessionKey');
+        if (sessionKey) {
+            const response = await axios.get(`${baseUrl}/users/status?id=${sessionKey}`, {
+                headers: {
+                    Authorization: `Bearer ${token}` // Include token in the request headers
+                }
+            });
+            setUserStatus(response.data.status);
+        }
     } catch (error) {
-      console.error('Error fetching user status:', error);
+        console.error('Error fetching user status:', error);
     }
-  };
+};
 
-  const updateStatus = async (status) => {
+const updateStatus = async (status) => {
     try {
-      const sessionKey = localStorage.getItem('sessionKey');
-      if (sessionKey) {
-        await axios.put(`${baseUrl}/users/updateStatus?id=${sessionKey}`, { status });
-        setUserStatus(status);
-        // Fetch online users after updating status
-        fetchOnlineUsers();
-      }
+        const sessionKey = localStorage.getItem('sessionKey');
+        if (sessionKey) {
+            await axios.put(`${baseUrl}/users/updateStatus?id=${sessionKey}`, { status }, {
+                headers: {
+                    Authorization: `Bearer ${token}` // Include token in the request headers
+                }
+            });
+            setUserStatus(status);
+            // Fetch online users after updating status
+            fetchOnlineUsers();
+        }
     } catch (error) {
-      console.error('Error updating user status:', error);
+        console.error('Error updating user status:', error);
     }
-  };
+};
 
-  const baseUrl = process.env.REACT_APP_BASE_URL;
-
-  const fetchOnlineUsers = async () => {
+const fetchOnlineUsers = async () => {
     try {
-      const response = await axios.get(`${baseUrl}/users/status`);
-      // const onlineUsersData = response.data.filter(user => user.status === 'online');
-      const onlineUsersData = response.data.filter(user => user.status === 'online' || user.status === 'away');
+        const response = await axios.get(`${baseUrl}/users/status`, {
+            headers: {
+                Authorization: `Bearer ${token}` // Include token in the request headers
+            }
+        });
+        // const onlineUsersData = response.data.filter(user => user.status === 'online');
+        const onlineUsersData = response.data.filter(user => user.status === 'online' || user.status === 'away');
 
-      setOnlineUsers(onlineUsersData);
+        setOnlineUsers(onlineUsersData);
     } catch (error) {
-      console.error('Error fetching online users:', error);
+        console.error('Error fetching online users:', error);
     }
-  };
+};
+
 
   return (
     <nav className="justify-content-around navbar navbar-expand-lg navbar-light bg-light">

@@ -11,7 +11,8 @@ const Register = () => {
   });
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-  const baseUrl = process.env.REACT_APP_BASE_URL;
+    const baseUrl = process.env.REACT_APP_BASE_URL;
+  const token = localStorage.getItem('token');
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -20,24 +21,28 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post(`${baseUrl}/register`, formData);
-      console.log(response.data);
-      // Handle success, redirect user or show a success message
-      setSuccessMessage(response.data.message);
+        const response = await axios.post(`${baseUrl}/register`, formData, {
+            headers: {
+                Authorization: `Bearer ${token}` // Include token in the request headers
+            }
+        });
+        console.log(response.data);
+        // Handle success, redirect user or show a success message
+        setSuccessMessage(response.data.message);
     } catch (error) {
-      if (error.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
-        setErrorMessage(error.response.data.error);
-      } else if (error.request) {
-        // The request was made but no response was received
-        console.error(error.request);
-      } else {
-        // Something happened in setting up the request that triggered an Error
-        console.error('Error', error.message);
-      }
+        if (error.response) {
+            // The request was made and the server responded with a status code
+            // that falls out of the range of 2xx
+            setErrorMessage(error.response.data.error);
+        } else if (error.request) {
+            // The request was made but no response was received
+            console.error(error.request);
+        } else {
+            // Something happened in setting up the request that triggered an Error
+            console.error('Error', error.message);
+        }
     }
-  };
+};
 
   return (
       <div className="row justify-content-center">

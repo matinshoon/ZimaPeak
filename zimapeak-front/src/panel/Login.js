@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { login } from '../AuthSlice';
 
-const baseUrl = process.env.REACT_APP_BASE_URL;
+  const baseUrl = process.env.REACT_APP_BASE_URL;
+  const token = localStorage.getItem('token');
 
 const Login = () => {
   const [username, setUsername] = useState('');
@@ -31,14 +32,23 @@ const Login = () => {
   
       const data = await response.json();
   
-      if (response.ok && data.user) {
+      if (response.ok && data.user && data.token) {
         console.log('Login successful:', data.user);
         setErrorMessage('');
-        dispatch(login({ username: data.user.username, fullname: data.user.fullname, sessionKey: data.user.id, role: data.user.role, email: data.user.email }));
-        
-        // Store authentication state in localStorage
-        localStorage.setItem('isAuthenticated', true);
-        
+
+        // Dispatch login action to update Redux state
+        dispatch(login({
+          username: data.user.username,
+          fullname: data.user.fullname,
+          sessionKey: data.user.id,
+          role: data.user.role,
+          email: data.user.email,
+        }));
+
+        // Store token in Redux state
+        localStorage.setItem('token', data.token);
+
+        // Navigate to dashboard
         navigate('/dashboard');
       } else {
         setErrorMessage(data.message); // Set error message from response
