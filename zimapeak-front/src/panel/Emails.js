@@ -11,7 +11,7 @@ const Emails = () => {
   const maxMessageLength = 100; // Maximum length of the message to display
   const baseUrl = process.env.REACT_APP_BASE_URL;
   const token = localStorage.getItem('token');
-  const userEmail = localStorage.getItem('email'); // Get the logged-in user's email address
+  // const userEmail = localStorage.getItem('email');
 
   useEffect(() => {
     fetchEmails();

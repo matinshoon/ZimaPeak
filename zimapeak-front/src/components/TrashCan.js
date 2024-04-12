@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash, faUndo } from '@fortawesome/free-solid-svg-icons'; // Import the undo icon
-import Dropdown from 'react-bootstrap/Dropdown';
 
 
 const Trash = ({ onEmailsSelected, onDelete, reloadTable }) => {

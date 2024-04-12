@@ -100,8 +100,8 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
 
             const role = localStorage.getItem('role');
             if (role !== 'admin') {
-                const sessionKey = localStorage.getItem('sessionKey');
-                filteredData = filteredData.filter(item => item.added_by === sessionKey);
+                const username = localStorage.getItem('username');
+                filteredData = filteredData.filter(item => item.added_by === username);
             }
 
             setTableData(filteredData);

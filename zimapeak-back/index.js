@@ -620,6 +620,144 @@ app.get('/api/get-sent-emails', authenticateToken, async (req, res) => {
   }
 });
 
+app.post('/api/make-event', authenticateToken, (req, res) => {
+  const { name, start_date, end_date, client_name, client_email, priority, added_by } = req.body;
+  const eventId = uuid.v4(); // Generate UUID for the event
+
+  // Insert new event into database
+  db.query('INSERT INTO events (id, name, start_date, end_date, client_name, client_email, priority, added_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    [eventId, name, start_date, end_date, client_name, client_email, priority, added_by],
+    (error, results) => {
+      if (error) {
+        console.error(error);
+        res.status(500).send('Error inserting event into database');
+      } else {
+        res.status(200).send('Event added successfully');
+      }
+    });
+});
+
+app.get(['/api/get-event', '/api/get-event/:id'], authenticateToken, (req, res) => {
+  const eventId = req.params.id; // Extract event ID from request params, if provided
+
+  // Construct the SQL query based on whether an event ID is provided
+  const sqlQuery = eventId ? `SELECT * FROM events WHERE id = '${eventId}'` : 'SELECT * FROM events';
+
+  // Fetch events from the database
+  db.query(sqlQuery, (error, results) => {
+    if (error) {
+      console.error(error);
+      res.status(500).send('Error fetching events from database');
+    } else {
+      res.status(200).json(results);
+    }
+  });
+});
+
+app.delete('/api/delete-event/:id', authenticateToken, (req, res) => {
+  const eventId = req.params.id; // Extract event ID from request params
+
+  // Delete event from the database
+  db.query('DELETE FROM events WHERE id = ?', eventId, (error, results) => {
+    if (error) {
+      console.error(error);
+      res.status(500).send('Error deleting event from database');
+    } else {
+      res.status(200).send('Event deleted successfully');
+    }
+  });
+});
+
+app.put('/api/event-update/:id', authenticateToken, async (req, res) => {
+  const eventId = req.params.id;
+  const updatedEvent = req.body;
+
+  // Convert added_time to the correct format
+  updatedEvent.added_time = new Date(updatedEvent.added_time).toISOString().slice(0, 19).replace('T', ' ');
+
+  try {
+    const sql = 'UPDATE events SET ? WHERE id = ?';
+    db.query(sql, [updatedEvent, eventId], (err, result) => {
+      if (err) {
+        console.error('Error updating event:', err);
+        res.status(500).json({ error: 'Internal server error' });
+      } else {
+        if (result.changedRows === 1) {
+          res.status(200).json({ message: 'Event updated successfully' });
+        } else {
+          res.status(404).json({ error: 'Event not found' });
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error updating event:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST endpoint to add a task to the to-do list
+app.post('/api/todo-make', authenticateToken, (req, res) => {
+  const { name, added_by } = req.body;
+  const taskId = uuid.v4(); // Generate a unique UUID
+  const sql = 'INSERT INTO TodoList (id, name, added_by) VALUES (?, ?, ?)';
+  db.query(sql, [taskId, name, added_by], (err, result) => {
+    if (err) {
+      console.error('Error adding task:', err);
+      res.status(500).send('Error adding task');
+    } else {
+      console.log('Task added successfully');
+      res.status(201).send('Task added successfully');
+    }
+  });
+});
+
+
+app.get('/api/todo-get', authenticateToken, (req, res) => {
+  const sql = 'SELECT id, name, completed, added_by FROM TodoList';
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error('Error fetching tasks:', err);
+      res.status(500).json({ message: 'Server error' });
+      return;
+    }
+    console.log('Tasks:', results);
+    res.json(results);
+  });
+});
+
+
+// PUT endpoint to update a task
+app.put('/api/todo/:id', authenticateToken, (req, res) => {
+  const taskId = req.params.id;
+  const { name, completed } = req.body;
+  const sql = 'UPDATE TodoList SET name = ?, completed = ? WHERE id = ?';
+  db.query(sql, [name, completed, taskId], (err, result) => {
+    if (err) {
+      console.error('Error updating task:', err);
+      res.status(500).json({ message: 'Error updating task' }); // Return JSON error response
+    } else {
+      console.log('Task updated successfully');
+      res.status(200).json({ message: 'Task updated successfully' }); // Return JSON success response
+    }
+  });
+});
+
+
+// DELETE endpoint to remove a task from the to-do list
+app.delete('/api/todo/:id', authenticateToken, (req, res) => {
+  const taskId = req.params.id;
+  const sql = 'DELETE FROM TodoList WHERE id = ?';
+  db.query(sql, [taskId], (err, result) => {
+    if (err) {
+      console.error('Error deleting task:', err);
+      res.status(500).send('Error deleting task');
+    } else {
+      console.log('Task deleted successfully');
+      res.status(200).send('Task deleted successfully');
+    }
+  });
+});
+
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });

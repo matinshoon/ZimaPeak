@@ -12,6 +12,8 @@ import Trash from './panel/Trash';
 
 import MemberDashboard from './panel/User/UserDashboard';
 import AdminDashboard from './panel/Admin/AdminDashboard';
+import MyCalendar from './panel/Calendar';
+import EventDetails from './panel/Event';
 
 function App() {
   const userRole = useSelector(state => state.auth.role);
@@ -32,9 +34,11 @@ function App() {
           <Route path="/contacts" element={<ProtectedRoute><Contacts /></ProtectedRoute>} />
           <Route path="/compose" element={<ProtectedRoute><Compose /></ProtectedRoute>} />
           <Route path="/emails" element={<ProtectedRoute><Emails /></ProtectedRoute>} />
+          <Route path="/calendar" element={<ProtectedRoute><MyCalendar /></ProtectedRoute>} />
           {userRole === 'admin' && (
             <Route path="/trash" element={<ProtectedRoute><Trash /></ProtectedRoute>} />
           )}
+          <Route path="/event/:id" element={<ProtectedRoute><EventDetails /></ProtectedRoute>} />
         </Routes>
       </div>
     </Router>

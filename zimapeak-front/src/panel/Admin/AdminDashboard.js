@@ -4,6 +4,7 @@ import UserControl from './UserControl'
 import ContactsReport from '../../components/ContatcsReport';
 import EmailReport from '../../components/EmailsReport';
 import UserReport from '../../components/UserReport';
+import MeetingReport from '../../components/MeetingReport';
 
 const Dashboard = () => {
   return (
@@ -21,14 +22,16 @@ const Dashboard = () => {
           <EmailReport />
         </div>
         <div className='col-4 p-4'>
-          <Register />
+          <MeetingReport />
         </div>
       </div>
       <div className='row'>
-        <div className='col-12 p-4'>
+        <div className='col-8 p-4'>
           <UserControl />
         </div>
-        
+        <div className='col-4 p-4'>
+          <Register />
+        </div>
       </div>
     </div>
   );

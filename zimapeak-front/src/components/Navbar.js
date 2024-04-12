@@ -4,6 +4,10 @@ import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../AuthSlice';
 import axios from 'axios';
 import UserDropdown from './UserDropdown';
+import { NavDropdown } from 'react-bootstrap'; // Import Dropdown component from react-bootstrap
+
+import logoBlue from '../images/logo-blue.png';
+
 
 const Navbar = () => {
   const [isMenuOpen, setMenuOpen] = useState(false);
@@ -15,6 +19,7 @@ const Navbar = () => {
   const [onlineUsers, setOnlineUsers] = useState([]);
   const baseUrl = process.env.REACT_APP_BASE_URL;
   const token = localStorage.getItem('token');
+
 
   const toggleMenu = () => {
     setMenuOpen(!isMenuOpen);
@@ -31,62 +36,64 @@ const Navbar = () => {
 
   const fetchUserStatus = async () => {
     try {
-        const sessionKey = localStorage.getItem('sessionKey');
-        if (sessionKey) {
-            const response = await axios.get(`${baseUrl}/users/status?id=${sessionKey}`, {
-                headers: {
-                    Authorization: `Bearer ${token}` // Include token in the request headers
-                }
-            });
-            setUserStatus(response.data.status);
-        }
-    } catch (error) {
-        console.error('Error fetching user status:', error);
-    }
-};
-
-const updateStatus = async (status) => {
-    try {
-        const sessionKey = localStorage.getItem('sessionKey');
-        if (sessionKey) {
-            await axios.put(`${baseUrl}/users/updateStatus?id=${sessionKey}`, { status }, {
-                headers: {
-                    Authorization: `Bearer ${token}` // Include token in the request headers
-                }
-            });
-            setUserStatus(status);
-            // Fetch online users after updating status
-            fetchOnlineUsers();
-        }
-    } catch (error) {
-        console.error('Error updating user status:', error);
-    }
-};
-
-const fetchOnlineUsers = async () => {
-    try {
-        const response = await axios.get(`${baseUrl}/users/status`, {
-            headers: {
-                Authorization: `Bearer ${token}` // Include token in the request headers
-            }
+      const sessionKey = localStorage.getItem('sessionKey');
+      if (sessionKey) {
+        const response = await axios.get(`${baseUrl}/users/status?id=${sessionKey}`, {
+          headers: {
+            Authorization: `Bearer ${token}` // Include token in the request headers
+          }
         });
-        // const onlineUsersData = response.data.filter(user => user.status === 'online');
-        const onlineUsersData = response.data.filter(user => user.status === 'online' || user.status === 'away');
-
-        setOnlineUsers(onlineUsersData);
+        setUserStatus(response.data.status);
+      }
     } catch (error) {
-        console.error('Error fetching online users:', error);
+      console.error('Error fetching user status:', error);
     }
-};
+  };
+
+  const updateStatus = async (status) => {
+    try {
+      const sessionKey = localStorage.getItem('sessionKey');
+      if (sessionKey) {
+        await axios.put(`${baseUrl}/users/updateStatus?id=${sessionKey}`, { status }, {
+          headers: {
+            Authorization: `Bearer ${token}` // Include token in the request headers
+          }
+        });
+        setUserStatus(status);
+        // Fetch online users after updating status
+        fetchOnlineUsers();
+      }
+    } catch (error) {
+      console.error('Error updating user status:', error);
+    }
+  };
+
+  const fetchOnlineUsers = async () => {
+    try {
+      const response = await axios.get(`${baseUrl}/users/status`, {
+        headers: {
+          Authorization: `Bearer ${token}` // Include token in the request headers
+        }
+      });
+      // const onlineUsersData = response.data.filter(user => user.status === 'online');
+      const onlineUsersData = response.data.filter(user => user.status === 'online' || user.status === 'away');
+
+      setOnlineUsers(onlineUsersData);
+    } catch (error) {
+      console.error('Error fetching online users:', error);
+    }
+  };
 
 
   return (
     <nav className="justify-content-around navbar navbar-expand-lg navbar-light bg-light">
-      <div className="container">
+      <div className="container w-100">
         {isAuthenticated ? (
           <Link className="navbar-brand" to="/">ZimaPeak</Link>
         ) : (
-          <div className="col-12 text-center">ZimaPeak</div>
+          <div className="col-12 d-flex align-items-center justify-content-center">
+            <img src={logoBlue} alt="Blue Logo" className="d-flex justify-content-center" style={{ height: '50px', width: '50px' }} />
+          </div>
         )}
 
         <button className="navbar-toggler" type="button" aria-label="Toggle navigation" onClick={toggleMenu}>
@@ -94,60 +101,62 @@ const fetchOnlineUsers = async () => {
         </button>
 
         <div className={`collapse navbar-collapse justify-content-between ${isMenuOpen ? 'show' : ''}`} id="navbarSupportedContent">
-          {isAuthenticated && (
-            <ul className="navbar-nav mr-auto">
-              {userRole === 'admin' && (
-                <>
-                  <li className="nav-item">
-                    <Link className="nav-link" to="/dashboard">Dashboard</Link>
-                  </li>
-                  <li className="nav-item">
-                    <Link className="nav-link" to="/contacts">Contacts</Link>
-                  </li>
-                  <li className="nav-item">
-                    <Link className="nav-link" to="/compose">Compose</Link>
-                  </li>
-                  <li className="nav-item">
-                    <Link className="nav-link" to="/emails">Emails</Link>
-                  </li>
-                  <li className="nav-item">
-                    <Link className="nav-link" to="/trash">Trash</Link>
-                  </li>
-                </>
-              )}
-
-              {userRole === 'user' && (
-                <>
-                  <li className="nav-item">
-                    <Link className="nav-link" to="/dashboard">Dashboard</Link>
-                  </li>
-                  <li className="nav-item">
-                    <Link className="nav-link" to="/contacts">Contacts</Link>
-                  </li>
-                  <li className="nav-item">
-                    <Link className="nav-link" to="/compose">Compose</Link>
-                  </li>
-                  <li className="nav-item">
-                    <Link className="nav-link" to="/emails">Emails</Link>
-                  </li>
-                </>
-              )}
-            </ul>
-          )}
-          {isAuthenticated && (
-            <ul className="navbar-nav ml-auto d-flex align-items-center">
-              <li className="nav-item dropdown">
-                <UserDropdown
-                  userStatus={userStatus}
-                  onlineUsers={onlineUsers}
-                  loggedInUser={loggedInUser}
-                  updateStatus={updateStatus}
-                  handleLogout={handleLogout}
-                />
+      {isAuthenticated && (
+        <ul className="navbar-nav mr-auto">
+          {userRole === 'admin' && (
+            <>
+              <li className="nav-item">
+                <Link className="nav-link" to="/dashboard">Dashboard</Link>
               </li>
-            </ul>
+              <li className="nav-item">
+                <Link className="nav-link" to="/contacts">Contacts</Link>
+              </li>
+              <NavDropdown title="Emails" id="basic-nav-dropdown">
+                <NavDropdown.Item><Link className="dropdown-item" to="/compose">Compose</Link></NavDropdown.Item>
+                <NavDropdown.Item><Link className="dropdown-item" to="/emails">Emails</Link></NavDropdown.Item>
+              </NavDropdown>
+              <li className="nav-item">
+                <Link className="nav-link" to="/calendar">Calendar</Link>
+              </li>
+              <li className="nav-item">
+                <Link className="nav-link" to="/trash">Trash</Link>
+              </li>
+            </>
           )}
-        </div>
+
+          {userRole === 'user' && (
+            <>
+              <li className="nav-item">
+                <Link className="nav-link" to="/dashboard">Dashboard</Link>
+              </li>
+              <li className="nav-item">
+                <Link className="nav-link" to="/contacts">Contacts</Link>
+              </li>
+              <NavDropdown title="Emails" id="basic-nav-dropdown">
+                <NavDropdown.Item><Link className="dropdown-item" to="/compose">Compose</Link></NavDropdown.Item>
+                <NavDropdown.Item><Link className="dropdown-item" to="/emails">Emails</Link></NavDropdown.Item>
+              </NavDropdown>
+              <li className="nav-item">
+                <Link className="nav-link" to="/calendar">Calendar</Link>
+              </li>
+            </>
+          )}
+        </ul>
+      )}
+      {isAuthenticated && (
+        <ul className="navbar-nav ml-auto d-flex align-items-center">
+          <li className="nav-item dropdown">
+            <UserDropdown
+              userStatus={userStatus}
+              onlineUsers={onlineUsers}
+              loggedInUser={loggedInUser}
+              updateStatus={updateStatus}
+              handleLogout={handleLogout}
+            />
+          </li>
+        </ul>
+      )}
+    </div>
       </div>
     </nav>
   );

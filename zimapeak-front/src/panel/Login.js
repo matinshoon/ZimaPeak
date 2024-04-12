@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { login } from '../AuthSlice';
 
   const baseUrl = process.env.REACT_APP_BASE_URL;
-  const token = localStorage.getItem('token');
+  // const token = localStorage.getItem('token');
 
 const Login = () => {
   const [username, setUsername] = useState('');
@@ -61,9 +61,9 @@ const Login = () => {
   
 
   return (
-    <div className="container mt-5">
-      <div className="row justify-content-center">
-        <div className="col-md-6">
+    <div className="container-fluid" style={{ height: '90vh' }}>
+      <div className="d-flex justify-content-center align-items-center h-100">
+        <div className="col-md-5">
           <div className="card">
             <div className="card-header">Login</div>
             <div className="card-body">
@@ -95,6 +95,8 @@ const Login = () => {
       </div>
     </div>
   );
+  
+  
 };
 
 export default Login;
