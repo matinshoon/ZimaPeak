@@ -1,33 +1,47 @@
 import React from 'react';
-import ContactsReport from '../../components/ContatcsReport';
+import ContactsReport from '../../components/ContactsReport';
 import EmailReport from '../../components/EmailsReport';
 import MeetingReport from '../../components/MeetingReport';
 import CalendarAgenda from '../../components/CalendarAgenda';
 import TodoList from '../../components/TodoList';
 
-
 const Dashboard = () => {
   return (
-    <div className="container-fluid d-flex">
-            <div className='col-4 d-flex flex-column'>
-        <div className='px-4 pt-2'>
-          <ContactsReport />
+    <div className="container-fluid">
+      <div className="row">
+        {/* Contacts Report */}
+        <div className="col-md-6 col-lg-4">
+          <div className="px-3 py-2">
+            <ContactsReport />
+          </div>
         </div>
-        <div className='px-4 pt-3'>
-          <EmailReport />
+
+        {/* Email Report */}
+        <div className="col-md-6 col-lg-4">
+          <div className="px-3 py-2">
+            <EmailReport />
+          </div>
         </div>
-        <div className='px-4 pt-3'>
-          <MeetingReport />
+
+        {/* Meeting Report */}
+        <div className="col-md-6 col-lg-4">
+          <div className="px-3 py-2">
+            <MeetingReport />
+          </div>
         </div>
-      </div>
-      <div className='col-4'>
-        <div className='col-lg-12 col-md-12 pt-2 h-100'>
-          <CalendarAgenda />
+
+        {/* Calendar Agenda */}
+        <div className="col-12 col-lg-8">
+          <div className="px-3 py-2">
+            <CalendarAgenda />
+          </div>
         </div>
-      </div>
-      <div className='col-4'>
-        <div className='col-lg-12 col-md-12 px-4 pt-2'>
-          <TodoList />
+
+        {/* Todo List */}
+        <div className="col-12 col-lg-4">
+          <div className="px-3 py-2">
+            <TodoList />
+          </div>
         </div>
       </div>
     </div>

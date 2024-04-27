@@ -5,11 +5,12 @@ const cors = require('cors');
 const multer = require('multer');
 const xlsx = require('xlsx');
 const fs = require('fs');
-const uuid = require('uuid'); 
+const uuid = require('uuid');
 const sgMail = require('@sendgrid/mail');
 const bcrypt = require('bcrypt');
 const dayjs = require('dayjs');
 const jwt = require('jsonwebtoken');
+const moment = require('moment-timezone');
 
 
 require('dotenv').config();
@@ -135,7 +136,7 @@ app.post('/api/login', (req, res) => {
 app.get('/api/data', authenticateToken, (req, res) => {
   try {
     // Construct the base SQL query
-    let sql = 'SELECT id, Name, Phone, Email, Website, status, DATE(date_added) AS date_added, emails_sent, Note, added_by, trash, deleted_by FROM Contacts';
+    let sql = 'SELECT id, Name, Phone, Email, Website, status, DATE(date_added) AS date_added, emails_sent, Note, added_by, trash, deleted_by, niche, Result FROM Contacts';
 
     // Check if filterOption, status, date_added, added_by, date, or trash query parameters are provided
     const { filterOption, status, date_added, added_by, date, trash } = req.query;
@@ -210,46 +211,40 @@ app.get('/api/data', authenticateToken, (req, res) => {
   }
 });
 
-
-
-
-
-
-
 app.get('/api/users/status', authenticateToken, (req, res) => {
   const userId = req.query.id;
 
   // If the id parameter is provided, fetch the status of a single entity
   if (userId) {
-      const sql = 'SELECT status FROM users WHERE id = ?';
-      db.query(sql, [userId], (err, result) => {
-          if (err) {
-              console.error('Error fetching status:', err.message);
-              res.status(500).json({ error: 'Error fetching status' });
-          } else {
-              if (result.length === 0) {
-                  res.status(404).json({ error: 'User not found' });
-              } else {
-                  res.status(200).json({ id: userId, status: result[0].status });
-              }
-          }
-      });
+    const sql = 'SELECT status FROM users WHERE id = ?';
+    db.query(sql, [userId], (err, result) => {
+      if (err) {
+        console.error('Error fetching status:', err.message);
+        res.status(500).json({ error: 'Error fetching status' });
+      } else {
+        if (result.length === 0) {
+          res.status(404).json({ error: 'User not found' });
+        } else {
+          res.status(200).json({ id: userId, status: result[0].status });
+        }
+      }
+    });
   } else {
-      // If no id parameter is provided, fetch the status of all entities
-      const sql = 'SELECT id, fullname, status FROM users';
-      db.query(sql, (err, result) => {
-          if (err) {
-              console.error('Error fetching status:', err.message);
-              res.status(500).json({ error: 'Error fetching status' });
-          } else {
-              const usersStatus = result.map(row => ({
-                  id: row.id,
-                  fullname: row.fullname,
-                  status: row.status
-              }));
-              res.status(200).json(usersStatus);
-          }
-      });
+    // If no id parameter is provided, fetch the status of all entities
+    const sql = 'SELECT id, fullname, status FROM users';
+    db.query(sql, (err, result) => {
+      if (err) {
+        console.error('Error fetching status:', err.message);
+        res.status(500).json({ error: 'Error fetching status' });
+      } else {
+        const usersStatus = result.map(row => ({
+          id: row.id,
+          fullname: row.fullname,
+          status: row.status
+        }));
+        res.status(200).json(usersStatus);
+      }
+    });
   }
 });
 
@@ -261,7 +256,7 @@ app.get('/api/users/status', authenticateToken, (req, res) => {
 const upload = multer({ dest: 'uploads/' });
 
 // API endpoint to handle file uploads and database insertion
-app.post('/api/upload', authenticateToken, upload.single('file'), (req, res) => {
+app.post('/api/upload', authenticateToken, upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
@@ -278,12 +273,50 @@ app.post('/api/upload', authenticateToken, upload.single('file'), (req, res) => 
       return res.status(400).json({ error: 'No data found in the Excel file' });
     }
 
-    // Generate unique IDs for each item
-    data = data.map(item => ({ ...item, id: uuid.v4(), status: 'active', added_by: req.query.added_by }));
+    // Retrieve niche from query parameters
+    const niche = req.query.niche;
 
-    const placeholders = data.map(() => '(?, ?, ?, ?, ?, ?, ?)').join(', ');
-    const sql = `INSERT INTO Contacts (id, Name, Phone, Email, Website, status, added_by) VALUES ${placeholders}`;
-    const values = data.flatMap(row => [row.id, row.Name, row.Phone, row.Email, row.Website, row.status, row.added_by]);    
+    let existingContacts = [];
+
+    try {
+      // Fetch existing contacts from the database
+      const existingContactsResult = await db.query(`SELECT Email, Phone FROM Contacts`);
+      existingContacts = existingContactsResult.rows;
+    } catch (error) {
+      console.error('Error fetching existing contacts:', error);
+      // Handle the error when fetching existing contacts
+      return res.status(500).json({ error: 'Error fetching existing contacts', details: error.message });
+    }
+
+    // Ensure that existingContacts is an array
+    existingContacts = existingContacts || [];
+
+    // Extract emails and phone numbers from existing contacts
+    const existingEmails = existingContacts.map(contact => contact.Email);
+    const existingPhones = existingContacts.map(contact => contact.Phone);
+
+    // Filter out existing contacts based on email or phone number
+    data = data.filter(item => {
+      return !existingEmails.includes(item.Email) && !existingPhones.includes(item.Phone);
+    });
+
+    // Add "niche" property to each item in the filtered data array
+    data = data.map(item => ({ 
+      ...item, 
+      id: uuid.v4(), 
+      status: 'active', 
+      added_by: req.query.added_by,
+      niche: niche, // Include the retrieved niche
+      Result: item.Result || 'Ongoing' // Add 'Ongoing' if Result is not provided
+    }));
+
+    if (data.length === 0) {
+      return res.status(400).json({ error: 'No new contacts to add' });
+    }
+
+    const placeholders = data.map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?)').join(', ');
+    const sql = `INSERT INTO Contacts (id, Name, Phone, Email, Website, status, added_by, niche, Result) VALUES ${placeholders}`;
+    const values = data.flatMap(row => [row.id, row.Name, row.Phone, row.Email, row.Website, row.status, row.added_by, row.niche, row.Result]);
 
     console.log('Generated SQL:', sql); // Log the SQL query here
     console.log('Values:', values);
@@ -307,16 +340,20 @@ app.post('/api/upload', authenticateToken, upload.single('file'), (req, res) => 
   }
 });
 
+
+
+
+
 app.post('/api/addContact', authenticateToken, async (req, res) => {
   try {
     // Extract parameters from the request body
-    const { Name, Phone, Email, Website, added_by } = req.body; // Add 'added_by' parameter
+    const { Name, Phone, Email, Website, added_by, niche, Result } = req.body; // Add 'niche' parameter
 
     // Generate a unique ID for the contact
     const id = uuid.v4();
 
-    // Insert the new contact into the database with added_by information
-    const result = await db.query('INSERT INTO Contacts (id, Name, Phone, Email, Website, status, added_by) VALUES (?, ?, ?, ?, ?, ?, ?)', [id, Name, Phone, Email, Website, 'active', added_by]);
+    // Insert the new contact into the database with added_by and niche information
+    const result = await db.query('INSERT INTO Contacts (id, Name, Phone, Email, Website, status, added_by, niche) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [id, Name, Phone, Email, Website, 'active', added_by, niche]);
 
     // Respond with success message
     res.json({ success: true, message: 'Contact added successfully' });
@@ -326,6 +363,7 @@ app.post('/api/addContact', authenticateToken, async (req, res) => {
     res.status(500).json({ success: false, message: 'Error adding contact' });
   }
 });
+
 
 
 
@@ -406,36 +444,45 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 app.post('/api/send-email', authenticateToken, async (req, res) => {
   const { to, from, subject, message, footer } = req.body;
 
-  if (!to || !from || !subject || !message) {
-      return res.status(400).json({ error: 'Missing required fields' });
-  }
-
-  // Parse the 'to' field into an array if it's provided as a comma-separated string
-  const toAddresses = Array.isArray(to) ? to : to.split(',').map(email => email.trim());
-
   try {
-      // Iterate over each recipient and send individual emails
-      for (const address of toAddresses) {
-          const msg = {
-              to: address,
-              from,
-              subject,
-              html: `${message}<br><br>${footer}`
-          };
+    // Check if all required fields are present
+    if (!to || !from || !subject || !message) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
 
-          // Send the individual email
-          await sgMail.send(msg);
-      }
+    // Parse the 'to' field into an array if it's provided as a comma-separated string
+    const toAddresses = Array.isArray(to) ? to : to.split(',').map(email => email.trim());
 
-      // Save sent email to the database
-      await saveSentEmailToDatabase(toAddresses, from, subject, message, footer);
+    // Iterate over each recipient and send individual emails
+    for (const address of toAddresses) {
+      const msg = {
+        to: address,
+        from,
+        subject,
+        html: `${message}<br><br>${footer}`
+      };
 
-      return res.status(200).json({ message: 'Emails sent successfully' });
+      // Send the individual email
+      await sgMail.send(msg);
+    }
+
+    // Save sent email to the database
+    await saveSentEmailToDatabase(toAddresses, from, subject, message, footer);
+
+    return res.status(200).json({ message: 'Emails sent successfully' });
   } catch (error) {
-      console.error('Error sending emails:', error);
-      return res.status(500).json({ error: 'Failed to send emails' });
+    console.error('Error sending emails:', error);
+
+    // Handle specific errors
+    if (error.response && error.response.body) {
+      return res.status(error.response.statusCode).json({ error: 'Failed to send emails', details: error.response.body.errors });
+    } else {
+      return res.status(500).json({ error: 'Failed to send emails', details: error.message });
+    }
   }
 });
+
+
 
 async function saveSentEmailToDatabase(to, from, subject, message, footer) {
   const sentAt = new Date().toISOString().slice(0, 19).replace('T', ' '); // Format the timestamp
@@ -448,15 +495,15 @@ async function saveSentEmailToDatabase(to, from, subject, message, footer) {
   const values = [emailId, toEmailString, from, subject, message, footer, sentAt];
 
   return new Promise((resolve, reject) => {
-      db.query(sql, values, (err, result) => {
-          if (err) {
-              console.error('Error saving sent email to database:', err);
-              reject(err);
-          } else {
-              console.log('Sent email saved to database successfully');
-              resolve(result);
-          }
-      });
+    db.query(sql, values, (err, result) => {
+      if (err) {
+        console.error('Error saving sent email to database:', err);
+        reject(err);
+      } else {
+        console.log('Sent email saved to database successfully');
+        resolve(result);
+      }
+    });
   });
 }
 
@@ -464,28 +511,28 @@ async function saveSentEmailToDatabase(to, from, subject, message, footer) {
 
 app.put('/api/update-emails-sent', authenticateToken, (req, res) => {
   try {
-      const { ids } = req.body;
+    const { ids } = req.body;
 
-      if (!ids || !Array.isArray(ids)) {
-          return res.status(400).json({ error: 'IDs array is required' });
+    if (!ids || !Array.isArray(ids)) {
+      return res.status(400).json({ error: 'IDs array is required' });
+    }
+
+    // Increment emails_sent by 1 for all specified IDs
+    const sql = 'UPDATE Contacts SET emails_sent = emails_sent + 1 WHERE id IN (?)';
+    const values = [ids];
+
+    db.query(sql, values, (err, result) => {
+      if (err) {
+        console.error('Error updating emails_sent:', err.message);
+        return res.status(500).json({ error: 'Error updating emails_sent', details: err.message });
+      } else {
+        console.log('Emails_sent updated successfully');
+        return res.status(200).json({ message: 'Emails_sent updated successfully' });
       }
-
-      // Increment emails_sent by 1 for all specified IDs
-      const sql = 'UPDATE Contacts SET emails_sent = emails_sent + 1 WHERE id IN (?)';
-      const values = [ids];
-
-      db.query(sql, values, (err, result) => {
-          if (err) {
-              console.error('Error updating emails_sent:', err.message);
-              return res.status(500).json({ error: 'Error updating emails_sent', details: err.message });
-          } else {
-              console.log('Emails_sent updated successfully');
-              return res.status(200).json({ message: 'Emails_sent updated successfully' });
-          }
-      });
+    });
   } catch (error) {
-      console.error('Error updating emails_sent:', error.message);
-      return res.status(500).json({ error: 'Error updating emails_sent', details: error.message });
+    console.error('Error updating emails_sent:', error.message);
+    return res.status(500).json({ error: 'Error updating emails_sent', details: error.message });
   }
 });
 
@@ -532,13 +579,13 @@ app.get('/api/users', authenticateToken, (req, res) => {
   // Query the database to get all users
   const sql = 'SELECT * FROM users';
   db.query(sql, (err, result) => {
-      if (err) {
-          console.error('Error fetching users:', err);
-          res.status(500).json({ error: 'Error fetching users' });
-      } else {
-          // Return the fetched users as JSON response
-          res.json(result);
-      }
+    if (err) {
+      console.error('Error fetching users:', err);
+      res.status(500).json({ error: 'Error fetching users' });
+    } else {
+      // Return the fetched users as JSON response
+      res.json(result);
+    }
   });
 });
 
@@ -585,13 +632,13 @@ app.get('/api/sendgrid-events', authenticateToken, (req, res) => {
   // Query the database to get all users
   const sql = 'SELECT * FROM sendgrid_events';
   db.query(sql, (err, result) => {
-      if (err) {
-          console.error('Error fetching users:', err);
-          res.status(500).json({ error: 'Error fetching users' });
-      } else {
-          // Return the fetched users as JSON response
-          res.json(result);
-      }
+    if (err) {
+      console.error('Error fetching users:', err);
+      res.status(500).json({ error: 'Error fetching users' });
+    } else {
+      // Return the fetched users as JSON response
+      res.json(result);
+    }
   });
 });
 
@@ -672,8 +719,12 @@ app.put('/api/event-update/:id', authenticateToken, async (req, res) => {
   const eventId = req.params.id;
   const updatedEvent = req.body;
 
-  // Convert added_time to the correct format
-  updatedEvent.added_time = new Date(updatedEvent.added_time).toISOString().slice(0, 19).replace('T', ' ');
+  // Convert start_date and end_date to EST timezone
+  updatedEvent.start_date = moment(updatedEvent.start_date).tz('America/Toronto').format('YYYY-MM-DD HH:mm:ss');
+  updatedEvent.end_date = moment(updatedEvent.end_date).tz('America/Toronto').format('YYYY-MM-DD HH:mm:ss');
+
+  // Format added_time field
+  updatedEvent.added_time = moment().tz('America/Toronto').format('YYYY-MM-DD HH:mm:ss');
 
   try {
     const sql = 'UPDATE events SET ? WHERE id = ?';

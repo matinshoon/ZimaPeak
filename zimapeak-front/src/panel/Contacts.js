@@ -39,15 +39,17 @@ const Contacts = () => {
 
       const formData = new FormData();
       formData.append('file', file);
-      const user = localStorage.getItem('username'); // Retrieve logged-in user's name
+      const user = localStorage.getItem('username');
+      const niche = document.getElementById('niche').value; // Retrieve niche value
 
       await axios.post(`${baseUrl}/upload`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
-          Authorization: `Bearer ${token}` // Include token in the request headers
+          Authorization: `Bearer ${token}`
         },
         params: {
-          added_by: user // Pass logged-in user's name as a parameter
+          added_by: user,
+          niche: niche // Include niche as a query parameter
         }
       });
 
@@ -63,6 +65,7 @@ const Contacts = () => {
     }
   };
 
+
   const handleManualSubmit = async (e) => {
     e.preventDefault();
 
@@ -70,7 +73,8 @@ const Contacts = () => {
     const phone = e.target.elements.phone.value;
     const email = e.target.elements.email.value;
     const website = e.target.elements.website.value;
-    const user = localStorage.getItem('username'); // Retrieve logged-in user's name
+    const niche = e.target.elements.niche.value; // Retrieve niche value
+    const user = localStorage.getItem('username');
 
     try {
       await axios.post(`${baseUrl}/addcontact`, {
@@ -78,10 +82,11 @@ const Contacts = () => {
         Phone: phone,
         Email: email,
         Website: website,
+        niche: niche, // Include niche in the request body
         added_by: user
       }, {
         headers: {
-          Authorization: `Bearer ${token}` // Include token in the request headers
+          Authorization: `Bearer ${token}`
         }
       });
 
@@ -95,6 +100,7 @@ const Contacts = () => {
       console.error('Error adding contact manually:', error);
     }
   };
+
 
 
   useEffect(() => {
@@ -129,6 +135,10 @@ const Contacts = () => {
                     </div>
                   </div>
                 </div>
+                <div className="form-group col-7">
+                  <label htmlFor="niche">Niche:</label>
+                  <input type="text" className="form-control" id="niche" name="niche" />
+                </div>
                 <button className="btn btn-primary col-md-10" onClick={handleSubmit}>Upload</button>
                 {uploadSuccess && (
                   <div className="alert alert-success" role="alert">
@@ -160,6 +170,11 @@ const Contacts = () => {
                       <label htmlFor="website">Website:</label>
                       <input type="text" className="form-control" id="website" name="website" />
                     </div>
+                    <div className="form-group">
+                      <label htmlFor="niche">Niche:</label>
+                      <input type="text" className="form-control" id="niche" name="niche" />
+                    </div>
+
                     <button className="btn btn-primary col-12 mt-3">Add</button>
                   </form>
                   {manualAddSuccess && (

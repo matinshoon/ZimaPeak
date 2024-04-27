@@ -12,34 +12,60 @@ const Compose = () => {
         message: ''
     });
     const [selectedContacts, setSelectedContacts] = useState([]);
+    const [emailError, setEmailError] = useState(''); // Define emailError state
     const baseUrl = process.env.REACT_APP_BASE_URL;
     const token = localStorage.getItem('token');
 
     const handleInputChange = (e) => {
-        setEmailData({ ...emailData, [e.target.name]: e.target.value });
+        const { name, value } = e.target;
+
+        // Check if the input is a valid email address
+        if (name === 'to' && !isValidEmail(value)) {
+            // Display an error message
+            setEmailError('Invalid email address');
+        } else {
+            // If the input is valid or not related to email, update the state
+            setEmailData({ ...emailData, [name]: value });
+            // Clear any existing error message
+            setEmailError('');
+        }
     };
+
+    const isValidEmail = (email) => {
+        // Regular expression for email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        // Check if the email matches the regex and doesn't contain any invalid characters
+        return emailRegex.test(email) && !email.includes('http') && !email.includes('#');
+    };
+
 
     const handleEmailsSelected = (selectedIdsOrEmails) => {
         // Extract emails and IDs separately
         const selectedEmails = [];
         const selectedIds = [];
-
+    
         selectedIdsOrEmails.forEach(item => {
             if (typeof item === 'object') {
-                selectedEmails.push(item.email);
-                selectedIds.push(item.id);
+                if (isValidEmail(item.email)) {
+                    selectedEmails.push(item.email);
+                    selectedIds.push(item.id);
+                }
             } else {
-                selectedEmails.push(item);
+                if (isValidEmail(item)) {
+                    selectedEmails.push(item);
+                }
             }
         });
-
+    
         // Update selectedContacts state
         setSelectedContacts(selectedIds);
-
+    
         // Update "To" field with selected emails separated by commas
         const emailsString = selectedEmails.join(', ');
         setEmailData({ ...emailData, to: emailsString });
     };
+    
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -83,7 +109,7 @@ const Compose = () => {
                     Authorization: `Bearer ${token}` // Include token in the request headers
                 }
             });
-            
+
 
             // Check if the response contains any error messages
             if (response.data.error) {
@@ -101,8 +127,6 @@ const Compose = () => {
         }
     };
 
-
-
     const handleUpdateEmailsSent = async (ids) => {
         try {
             if (ids.length > 0) {
@@ -119,7 +143,7 @@ const Compose = () => {
             console.error('Error updating emails_sent:', error);
         }
     };
-    
+
 
     return (
         <div className="container-fluid full-height">
@@ -129,7 +153,8 @@ const Compose = () => {
                         <form onSubmit={handleSubmit}>
                             <div className="form-group">
                                 <label htmlFor="to">To:</label>
-                                <input type="text" className="form-control" id="to" name="to" placeholder="Enter recipient email" value={emailData.to} onChange={handleInputChange} required />
+                                <input type="text" className="form-control" id="to" name="to" placeholder="Enter recipient email" value={emailData.to} onChange={handleInputChange} required disabled />
+                                {emailError && <div className="invalid-feedback">{emailError}</div>}
                             </div>
                             <div className="form-group">
                                 <label htmlFor="subject">Subject:</label>
@@ -139,7 +164,7 @@ const Compose = () => {
                                 <label htmlFor="message">Message:</label>
                                 <textarea className="form-control" id="message" name="message" rows="27" placeholder="Enter your message" value={emailData.message} onChange={handleInputChange} required></textarea>
                             </div>
-                            <button type="submit" className="mt-3 col-12 btn btn-primary">Send</button>
+                            <button type="submit" className="mt-3 col-12 btn btn-primary" disabled={emailError || !emailData.to}>Send</button>
                         </form>
                     </div>
                 </div>

@@ -11,53 +11,64 @@ const UserReport = () => {
   
   useEffect(() => {
     const fetchUserData = async () => {
-        try {
-            // Get current date in EST timezone
-            const currentDate = dayjs().format('YYYY-MM-DD');
-
-            // Fetching user data
-            const usersResponse = await axios.get(`${baseUrl}/users`, {
-                headers: {
-                    Authorization: `Bearer ${token}` // Include token in the request headers
-                }
-            });
-            const users = usersResponse.data.filter(user => user.role === 'user');
-
-            // Fetching contacts added data for the current day
-            const contactsResponse = await axios.get(`${baseUrl}/data?date=${currentDate}`, {
-                headers: {
-                    Authorization: `Bearer ${token}` // Include token in the request headers
-                }
-            });
-            const contactsData = contactsResponse.data;
-
-            // Fetching emails sent data for the current day
-            const emailsResponse = await axios.get(`${baseUrl}/get-sent-emails?date=${currentDate}`, {
-                headers: {
-                    Authorization: `Bearer ${token}` // Include token in the request headers
-                }
-            });
-            const emailsData = emailsResponse.data;
-
-            // Combine user data with contacts added and emails sent
-            const combinedData = users.map(user => {
-                const contactsAdded = contactsData.filter(contact => contact.added_by === user.id).length;
-                const emailsSent = emailsData.filter(email => email.from_email === user.email).length;
-                return {
-                    name: user.fullname,
-                    contactsAdded,
-                    emailsSent
-                };
-            });
-
-            // Update state with combined data
-            setUserData(combinedData);
-            setLoading(false);
-        } catch (error) {
-            console.error('Error fetching data:', error);
-            setLoading(false);
-        }
-    };
+      try {
+          // Get current date in EST timezone
+          const currentDate = dayjs().format('YYYY-MM-DD');
+  
+          // Fetching user data
+          const usersResponse = await axios.get(`${baseUrl}/users`, {
+              headers: {
+                  Authorization: `Bearer ${token}` // Include token in the request headers
+              }
+          });
+          const users = usersResponse.data.filter(user => user.role === 'user' || user.role === 'admin');
+  
+          // Fetching contacts added data for the current day
+          const contactsResponse = await axios.get(`${baseUrl}/data?date=${currentDate}`, {
+              headers: {
+                  Authorization: `Bearer ${token}` // Include token in the request headers
+              }
+          });
+          const contactsData = contactsResponse.data;
+  
+          // Fetching emails sent data for the current day
+          const emailsResponse = await axios.get(`${baseUrl}/get-sent-emails?date=${currentDate}`, {
+              headers: {
+                  Authorization: `Bearer ${token}` // Include token in the request headers
+              }
+          });
+          const emailsData = emailsResponse.data;
+  
+          // Fetching meetings set data for the current day
+          const meetingsResponse = await axios.get(`${baseUrl}/get-event`, {
+              headers: {
+                  Authorization: `Bearer ${token}` // Include token in the request headers
+              }
+          });
+          const meetingsData = meetingsResponse.data;
+  
+          // Combine user data with contacts added, emails sent, and meetings set
+          const combinedData = users.map(user => {
+              const contactsAdded = contactsData.filter(contact => contact.added_by === user.username).length;
+              const emailsSent = emailsData.filter(email => email.from_email === user.email).length;
+              const meetingsSet = meetingsData.filter(meeting => meeting.added_by === user.id).length;
+              return {
+                  name: user.fullname,
+                  contactsAdded,
+                  emailsSent,
+                  meetingsSet
+              };
+          });
+  
+          // Update state with combined data
+          setUserData(combinedData);
+          setLoading(false);
+      } catch (error) {
+          console.error('Error fetching data:', error);
+          setLoading(false);
+      }
+  };
+  
 
     fetchUserData();
 }, [token]); // Add token to the dependency array
@@ -75,7 +86,8 @@ const UserReport = () => {
             <Tooltip />
             <Legend />
             <Bar dataKey="contactsAdded" fill="#8884d8" />
-            <Bar dataKey="emailsSent" fill="#82ca9d" />
+            <Bar dataKey="emailsSent" fill="#FFCE21" />
+            <Bar dataKey="meetingsSet" fill="#FF2145" />
           </BarChart>
         </ResponsiveContainer>
       )}

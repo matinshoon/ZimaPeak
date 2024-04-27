@@ -4,7 +4,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPowerOff, faTrash } from '@fortawesome/free-solid-svg-icons';
 import Dropdown from 'react-bootstrap/Dropdown';
 
-
 const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
     const [tableData, setTableData] = useState([]);
     const [selectedItems, setSelectedItems] = useState([]);
@@ -20,17 +19,21 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
     const [editedNote, setEditedNote] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [contactsPerPage] = useState(50); // Set the number of contacts per page
-
+    const [editableResult, setEditableResult] = useState({ id: null, result: '' });
+    // Calculate total number of pages
+    const totalContacts = tableData.length;
+    const pageNumbers = [];
+    for (let i = 1; i <= Math.ceil(totalContacts / contactsPerPage); i++) {
+        pageNumbers.push(i);
+    };
     const baseUrl = process.env.REACT_APP_BASE_URL;
     const token = localStorage.getItem('token');
-
 
     const handleEditNote = (id, note) => {
         setEditingNoteId(id);
         setEditedNote(note);
     };
 
-    // Function to save the edited note
     const saveEditedNote = async (id) => {
         try {
             await axios.put(`${baseUrl}/update`, {
@@ -38,10 +41,10 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
                 Note: editedNote
             }, {
                 headers: {
-                    Authorization: `Bearer ${token}` // Include token in the request headers
+                    Authorization: `Bearer ${token}`
                 }
             });
-            // Update the table data with the modified note
+
             const updatedData = tableData.map((item) => {
                 if (item.id === id) {
                     return {
@@ -58,6 +61,8 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
             console.error('Error updating note:', error);
         }
     };
+
+    const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
     const handleRowClick = (id) => {
         setSelectedRowId(id === selectedRowId ? null : id); // Toggle selected row
@@ -92,7 +97,7 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
 
             const response = await axios.get(url, {
                 headers: {
-                    Authorization: `Bearer ${token}` // Include token in the request headers
+                    Authorization: `Bearer ${token}`
                 }
             });
 
@@ -104,39 +109,59 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
                 filteredData = filteredData.filter(item => item.added_by === username);
             }
 
-            setTableData(filteredData);
+            // Check for duplicates and mark them as trash
+            const uniqueItems = [];
+            const duplicateIds = new Set();
+            filteredData.forEach(item => {
+                if (uniqueItems.some(uniqueItem => uniqueItem.Phone === item.Phone || uniqueItem.Email === item.Email)) {
+                    duplicateIds.add(item.id);
+                } else {
+                    uniqueItems.push(item);
+                }
+            });
+
+            // Update duplicate items to trash ('1')
+            if (duplicateIds.size > 0) {
+                await axios.put(`${baseUrl}/update`, {
+                    ids: Array.from(duplicateIds),
+                    trash: '1',
+                    deleted_by: localStorage.getItem('username')
+                }, {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                });
+            }
+
+            // Retain color information for each result
+            uniqueItems.forEach(item => {
+                item.resultColor = getResultColor(item.Result);
+            });
+
+            setTableData(uniqueItems);
         } catch (error) {
             console.error('Error fetching data:', error);
         }
     };
 
-
-
     const handleFilterOption = (option) => {
-        // Convert the option to lowercase
         const lowercaseOption = option.toLowerCase();
         setFilterOption(option);
         setSelectedItem(option);
-        // Clear selected items when changing filter options
         setSelectedItems([]);
     };
-
 
     const handleShowActiveOnly = () => {
         setShowActiveOnly(!showActiveOnly);
-        // Clear selected items when toggling show active only
         setSelectedItems([]);
     };
-
 
     const handleSelect = (id) => {
         if (id !== undefined) {
             setSelectedItems((prevSelectedItems) => {
-                // If the clicked checkbox was already selected, deselect it
                 if (prevSelectedItems.includes(id)) {
                     return prevSelectedItems.filter((item) => item !== id);
                 } else {
-                    // If the clicked checkbox was not selected, select it
                     return [...prevSelectedItems, id];
                 }
             });
@@ -145,13 +170,11 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
 
     const handleSelectAll = () => {
         if (selectAll) {
-            // Deselect all items
             setSelectedItems([]);
         } else {
-            // Select all items
             setSelectedItems(tableData.map((item) => item.id));
         }
-        setSelectAll(!selectAll); // Toggle selectAll state
+        setSelectAll(!selectAll);
     };
 
     const handleActionConfirmation = (action) => {
@@ -161,45 +184,35 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
 
     const handleDelete = async () => {
         try {
-            // Ensure that at least one item is selected for deletion
             if (selectedItems.length === 0) {
                 return;
             }
 
-            // Get sessionKey from local storage
             const username = localStorage.getItem('username');
 
-            // Prepare the data object for the PUT request
             const requestData = {
                 ids: selectedItems,
                 trash: '1',
                 deleted_by: username
             };
 
-            // Send a PUT request to update selected items
             await axios.put(`${baseUrl}/update`, requestData, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
             });
 
-            // Refetch data to update the table
             fetchData();
         } catch (error) {
             console.error('Error updating items:', error);
         }
     };
 
-
     const handleToggleSingleActivate = async (id) => {
         try {
-            // Find the item with the specified id
             const currentItem = tableData.find((item) => item.id === id);
-
-            // Toggle the status of the item
             const updatedStatus = currentItem.status === 'active' ? 'inactive' : 'active';
 
-            // Update the status of the item in the table data
             const updatedData = tableData.map((item) => {
                 if (item.id === id) {
                     return {
@@ -210,16 +223,14 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
                 return item;
             });
 
-            // Update the table data with the modified item
             setTableData(updatedData);
 
-            // Send a PUT request to update the status of the item in the backend
             await axios.put(`${baseUrl}/update`, {
                 ids: [id],
                 status: updatedStatus
             }, {
                 headers: {
-                    Authorization: `Bearer ${token}` // Include token in the request headers
+                    Authorization: `Bearer ${token}`
                 }
             });
 
@@ -228,10 +239,8 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
         }
     };
 
-
     const handleToggleActivate = async () => {
         try {
-            // Map through all selected items and toggle their status
             const updatedData = tableData.map((item) => {
                 if (selectedItems.includes(item.id)) {
                     return {
@@ -242,10 +251,8 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
                 return item;
             });
 
-            // Update the table data with the modified items
             setTableData(updatedData);
 
-            // Send a PUT request to update the status of selected items in the backend
             await axios.put(`${baseUrl}/update`, {
                 ids: selectedItems,
                 status: selectedItems.map((id) => {
@@ -254,7 +261,7 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
                 })
             }, {
                 headers: {
-                    Authorization: `Bearer ${token}` // Include token in the request headers
+                    Authorization: `Bearer ${token}`
                 }
             });
 
@@ -263,45 +270,85 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
         }
     };
 
-
     const handleSearch = (event) => {
         setSearchQuery(event.target.value);
     };
 
     const filteredTableData = tableData.filter(item => {
-        const searchLowerCase = searchQuery?.toLowerCase(); // Safely access toLowerCase()
-        if (!searchLowerCase) return true; // If searchLowerCase is null or undefined, return true
+        const searchLowerCase = searchQuery?.toLowerCase();
+        if (!searchLowerCase) return true;
         return (
             item.Name?.toLowerCase().includes(searchLowerCase) ||
             item.Phone?.toLowerCase().includes(searchLowerCase) ||
             item.Email?.toLowerCase().includes(searchLowerCase) ||
+            item.niche?.toLowerCase().includes(searchLowerCase) ||
+            item.Result?.toLowerCase().includes(searchLowerCase) ||
             item.Website?.toLowerCase().includes(searchLowerCase)
         );
     });
 
     const handleEmailsSelected = () => {
         const selectedContacts = filteredTableData
-            .filter(item => selectedItems.includes(item.id)) // Filter selected items
-            .map(item => ({ id: item.id, email: item.Email })); // Extract user ID and email address
+            .filter(item => selectedItems.includes(item.id))
+            .map(item => ({ id: item.id, email: item.Email }));
         onEmailsSelected(selectedContacts);
     };
 
+    const handleResultEdit = (id, result) => {
+        setEditableResult({ id, result });
+    };
 
-    // Calculate indexes of contacts to be displayed on the current page
-    const indexOfLastContact = currentPage * contactsPerPage;
-    const indexOfFirstContact = indexOfLastContact - contactsPerPage;
-    const currentContacts = filteredTableData.slice(indexOfFirstContact, indexOfLastContact);
+    const handleResultChange = (event) => {
+        setEditableResult({ ...editableResult, result: event.target.value });
+    };
 
-    // Calculate total number of pages
-    const totalContacts = tableData.length;
-    const pageNumbers = [];
-    for (let i = 1; i <= Math.ceil(totalContacts / contactsPerPage); i++) {
-        pageNumbers.push(i);
-    }
+    const saveEditableResult = async (id) => {
+        try {
+            await axios.put(`${baseUrl}/update`, {
+                ids: [id],
+                Result: editableResult.result
+            }, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
 
-    // Function to handle page changes
-    const paginate = (pageNumber) => setCurrentPage(pageNumber);
+            const updatedData = tableData.map((item) => {
+                if (item.id === id) {
+                    return {
+                        ...item,
+                        Result: editableResult.result
+                    };
+                }
+                return item;
+            });
 
+            setTableData(updatedData);
+            setEditableResult({ id: null, result: '' }); // Reset editing state
+        } catch (error) {
+            console.error('Error updating result:', error);
+        }
+    };
+
+    const resultOptions = ['interested', 'not interested', 'call back', 'voice mail'];
+
+    const getResultColor = (result) => {
+        switch (result) {
+            case 'interested':
+                return 'green';
+            case 'not interested':
+                return 'red';
+            case 'voicemail':
+            case 'voice mail':
+            case 'call back':
+            case 'callback':
+                return 'orange';
+            case 'Ongoing':
+                return 'blue';
+            default:
+                return 'inherit';
+        }
+    };
 
 
     return (
@@ -353,18 +400,21 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
                     <tr>
                         <th>
                             <span><input type="checkbox" onChange={handleSelectAll} checked={selectAll} />{' '}</span>
-                            Select</th>
+                            Select
+                        </th>
                         <th>Name</th>
                         <th>Phone</th>
                         <th>Email</th>
                         <th>Website</th>
+                        <th>Result</th>
+                        <th>Niche</th>
                         <th>Emails Sent</th>
                         {localStorage.getItem('role') === 'admin' && <th>Added By</th>}
                         <th>Status</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {currentContacts.map((item) => (
+                    {filteredTableData.map((item) => (
                         <React.Fragment key={item.id}>
                             <tr onClick={() => handleRowClick(item.id)}>
                                 <td>
@@ -376,8 +426,50 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
                                 </td>
                                 <td><span style={{ color: item.status === 'active' ? 'black' : 'silver' }}>{item.Name}</span></td>
                                 <td><a href={`tel:${item.Phone}`} style={{ color: item.status === 'active' ? 'black' : 'silver', textDecoration: 'none' }}>{item.Phone}</a></td>
-                                <td><span style={{ color: item.status === 'active' ? 'black' : 'silver' }}>{item.Email}</span></td>
-                                <td><span style={{ color: item.status === 'active' ? 'black' : 'silver' }}>{item.Website}</span></td>
+                                <td><span style={{
+                                    color: item.status === 'active' ? 'black' : 'silver', display: 'block',
+                                    maxWidth: '150px', // Set maximum width for the content
+                                    overflow: 'hidden',
+                                    whiteSpace: 'nowrap',
+                                    textOverflow: 'ellipsis'
+                                }}>{item.Email}</span></td>
+                                <td>
+                                    <span style={{
+                                        color: item.status === 'active' ? 'black' : 'silver',
+                                        display: 'block',
+                                        maxWidth: '150px', // Set maximum width for the content
+                                        overflow: 'hidden',
+                                        whiteSpace: 'nowrap',
+                                        textOverflow: 'ellipsis'
+                                    }}>
+                                        <a href={item.Website} target="_blank" rel="noopener noreferrer">{item.Website}</a>
+                                    </span>
+                                </td>
+                                <td>
+                                    {editableResult.id === item.id ? (
+                                        <select
+                                            value={editableResult.result}
+                                            onChange={handleResultChange}
+                                            onBlur={() => saveEditableResult(item.id)}
+                                        >
+                                            {resultOptions.map((option) => (
+                                                <option key={option} value={option}>{option}</option>
+                                            ))}
+                                        </select>
+                                    ) : (
+                                        <span
+                                            style={{
+                                                cursor: 'pointer',
+                                                color: item.resultColor,
+                                            }}
+                                            onClick={() => handleResultEdit(item.id, item.Result)}
+                                        >
+                                            {item.Result}
+                                        </span>
+                                    )}
+                                </td>
+
+                                <td><span style={{ color: item.status === 'active' ? 'black' : 'silver' }}>{item.niche}</span></td>
                                 <td className='text-center'><span style={{ color: item.status === 'active' ? 'black' : 'silver' }}>{item.emails_sent}</span></td>
                                 {localStorage.getItem('role') === 'admin' && (
                                     <td><span style={{ color: item.status === 'active' ? 'black' : 'silver' }}>{item.added_by}</span></td>

@@ -4,6 +4,7 @@ import { useParams } from 'react-router-dom';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import moment from 'moment';
+import 'moment-timezone';
 
 const EventDetails = () => {
   const [event, setEvent] = useState(null);
@@ -15,6 +16,7 @@ const EventDetails = () => {
   const baseUrl = process.env.REACT_APP_BASE_URL;
   const token = localStorage.getItem('token');
   const userRole = localStorage.getItem('role'); // Get user role from localStorage
+  moment().tz('America/Toronto');
 
   useEffect(() => {
     const fetchEvent = async () => {
@@ -73,29 +75,22 @@ const EventDetails = () => {
 
   const handleSaveEvent = async () => {
     try {
-      // Convert start_date and end_date strings to Date objects
-      const startDate = moment(editedEvent.start_date).toDate();
-      const endDate = moment(editedEvent.end_date).toDate();
-  
-      // Convert Date objects to MySQL format
-      const startDateString = startDate.toISOString().slice(0, 19).replace('T', ' ');
-      const endDateString = endDate.toISOString().slice(0, 19).replace('T', ' ');
-  
-      // Update the editedEvent with the formatted dates
+      const startDateString = moment(editedEvent.start_date).tz('America/Toronto').format('YYYY-MM-DD HH:mm:ss');
+      const endDateString = moment(editedEvent.end_date).tz('America/Toronto').format('YYYY-MM-DD HH:mm:ss');
+
       const editedEventData = {
         ...editedEvent,
         start_date: startDateString,
         end_date: endDateString
       };
-  
+
       // Make PUT request to update the event
       await axios.put(`${baseUrl}/event-update/${id}`, editedEventData, {
         headers: {
           Authorization: `Bearer ${token}`
         }
       });
-      
-      // Exit edit mode and update the event details
+
       setEvent(editedEventData);
       setEditMode(false);
     } catch (error) {
@@ -103,7 +98,7 @@ const EventDetails = () => {
       // Handle error, show error message to the user
     }
   };
-  
+
   return (
     <div className="container">
       <h2 className="my-4">Event Details</h2>
@@ -133,8 +128,15 @@ const EventDetails = () => {
                 <div className="mb-3">
                   <label className="form-label">Start Date:</label>
                   <DatePicker
-                    selected={new Date(editedEvent.start_date)}
-                    onChange={(date) => setEditedEvent({ ...editedEvent, start_date: date })}
+                    selected={editedEvent.start_date ? new Date(editedEvent.start_date) : null}
+                    onChange={(date) => {
+                      console.log("Selected start date:", date);
+                      const startDate = moment(date).tz('America/Toronto').format();
+                      setEditedEvent(prevState => ({
+                        ...prevState,
+                        start_date: startDate
+                      }));
+                    }}
                     showTimeSelect
                     dateFormat="MMMM d, yyyy h:mm aa"
                     className="form-control"
@@ -143,8 +145,15 @@ const EventDetails = () => {
                 <div className="mb-3">
                   <label className="form-label">End Date:</label>
                   <DatePicker
-                    selected={new Date(editedEvent.end_date)}
-                    onChange={(date) => setEditedEvent({ ...editedEvent, end_date: date })}
+                    selected={editedEvent.end_date ? new Date(editedEvent.end_date) : null}
+                    onChange={(date) => {
+                      console.log("Selected end date:", date);
+                      const endDate = moment(date).tz('America/Toronto').format();
+                      setEditedEvent(prevState => ({
+                        ...prevState,
+                        end_date: endDate
+                      }));
+                    }}
                     showTimeSelect
                     dateFormat="MMMM d, yyyy h:mm aa"
                     className="form-control"

@@ -22,17 +22,17 @@ const Emails = () => {
         // Calculate the date 60 days ago
         const pastDate = new Date();
         pastDate.setDate(pastDate.getDate() - 60);
-        const formattedDate = pastDate.toISOString().split('T')[0]; // Get the date in 'YYYY-MM-DD' format
+        // const formattedDate = pastDate.toISOString().split('T')[0];
 
         // Make a GET request to fetch emails since the past 60 days
-        const response = await axios.get(`${baseUrl}/get-sent-emails?date=${formattedDate}`, {
+        const response = await axios.get(`${baseUrl}/get-sent-emails`, {
           headers: {
               Authorization: `Bearer ${token}` // Include the token in the request headers
           }
       });
 
         // Filter emails to only include emails sent to the logged-in user
-        const userEmail = localStorage.getItem('userEmail'); // Assuming userEmail is stored in localStorage
+        const userEmail = localStorage.getItem('email'); // Assuming userEmail is stored in localStorage
         const userEmails = response.data.filter(email => email.from_email === userEmail);
 
         setEmails(userEmails);

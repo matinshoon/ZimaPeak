@@ -1,11 +1,11 @@
 -- phpMyAdmin SQL Dump
--- version 5.2.1
+-- version 5.2.0
 -- https://www.phpmyadmin.net/
 --
--- Host: localhost:3306
--- Generation Time: Mar 30, 2024 at 02:51 PM
--- Server version: 10.6.17-MariaDB-cll-lve
--- PHP Version: 8.1.27
+-- Host: localhost:8889
+-- Generation Time: Apr 14, 2024 at 06:39 AM
+-- Server version: 5.7.39
+-- PHP Version: 7.4.33
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -18,7 +18,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Database: `zimalxqv_panel`
+-- Database: `test`
 --
 
 -- --------------------------------------------------------
@@ -34,13 +34,31 @@ CREATE TABLE `Contacts` (
   `Email` varchar(255) DEFAULT NULL,
   `Website` varchar(255) DEFAULT NULL,
   `status` varchar(255) NOT NULL DEFAULT 'active',
-  `date_added` timestamp NOT NULL DEFAULT current_timestamp(),
-  `emails_sent` int(11) DEFAULT 0,
+  `date_added` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `emails_sent` int(11) DEFAULT '0',
   `Note` varchar(255) DEFAULT 'Click to add Note',
   `added_by` varchar(255) DEFAULT NULL,
-  `trash` tinyint(1) DEFAULT 0,
+  `trash` tinyint(1) DEFAULT '0',
   `deleted_by` varchar(255) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `events`
+--
+
+CREATE TABLE `events` (
+  `id` varchar(36) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `start_date` varchar(255) DEFAULT NULL,
+  `end_date` varchar(255) DEFAULT NULL,
+  `client_name` varchar(255) NOT NULL,
+  `client_email` varchar(255) NOT NULL,
+  `priority` int(11) NOT NULL,
+  `added_by` char(36) DEFAULT NULL,
+  `added_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -62,9 +80,9 @@ CREATE TABLE `sendgrid_events` (
   `ip` varchar(50) DEFAULT NULL,
   `url` varchar(255) DEFAULT NULL,
   `asm_group_id` int(11) DEFAULT NULL,
-  `payload` text DEFAULT NULL,
+  `payload` text,
   `event_type` varchar(255) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -74,13 +92,26 @@ CREATE TABLE `sendgrid_events` (
 
 CREATE TABLE `sent_emails` (
   `id` varchar(36) NOT NULL,
-  `to_email` text DEFAULT NULL,
+  `to_email` text,
   `from_email` varchar(255) NOT NULL,
   `subject` varchar(255) NOT NULL,
   `message` text NOT NULL,
-  `footer` text DEFAULT NULL,
+  `footer` text,
   `sent_at` datetime NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `TodoList`
+--
+
+CREATE TABLE `TodoList` (
+  `id` varchar(36) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `completed` tinyint(1) NOT NULL DEFAULT '0',
+  `added_by` varchar(255) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -98,14 +129,14 @@ CREATE TABLE `users` (
   `status` varchar(50) NOT NULL DEFAULT 'offline',
   `state` varchar(50) DEFAULT 'active',
   `income` int(11) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 --
 -- Dumping data for table `users`
 --
 
 INSERT INTO `users` (`id`, `username`, `email`, `fullname`, `role`, `password`, `status`, `state`, `income`) VALUES
-('9d9ac90e-d819-46fe-ae96-b73d21cc8221', 'Alex', 'Alex@zimapeak.com', 'Alex', 'user', '$2b$10$ZgVwMceekxZKIwSQTiU/Ae1glxNpKnImZ9WSmDmchgzn7CRWP5er6', 'offline', 'active', NULL),
+('9d9ac90e-d819-46fe-ae96-b73d21cc8221', 'Alex', 'Alex@zimapeak.com', 'Alex', 'user', '$2b$10$cychI2ZgUm8N/n6wjet9a.1QG6c2PAQtSDghE/mOdvsoqifyQK6.m', 'offline', 'active', NULL),
 ('c05b43f8-9232-4feb-993a-822d9f3f2cfc', 'Matt', 'Matt@zimapeak.com', 'Matt', 'admin', '$2b$10$cychI2ZgUm8N/n6wjet9a.1QG6c2PAQtSDghE/mOdvsoqifyQK6.m', 'offline', 'active', NULL);
 
 --
@@ -119,6 +150,12 @@ ALTER TABLE `Contacts`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indexes for table `events`
+--
+ALTER TABLE `events`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- Indexes for table `sendgrid_events`
 --
 ALTER TABLE `sendgrid_events`
@@ -128,6 +165,12 @@ ALTER TABLE `sendgrid_events`
 -- Indexes for table `sent_emails`
 --
 ALTER TABLE `sent_emails`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `TodoList`
+--
+ALTER TABLE `TodoList`
   ADD PRIMARY KEY (`id`);
 
 --
@@ -144,7 +187,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `sendgrid_events`
 --
 ALTER TABLE `sendgrid_events`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 DELIMITER $$
 --
