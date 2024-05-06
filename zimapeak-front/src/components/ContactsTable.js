@@ -19,6 +19,7 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
     const [editedNote, setEditedNote] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [contactsPerPage] = useState(50); // Set the number of contacts per page
+    const [priorityFilter, setPriorityFilter] = useState(null);
     const [editableResult, setEditableResult] = useState({ id: null, result: '' });
     // Calculate total number of pages
     const totalContacts = tableData.length;
@@ -68,11 +69,15 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
         setSelectedRowId(id === selectedRowId ? null : id); // Toggle selected row
     };
 
+    const handlePriorityFilterChange = (priority) => {
+        setPriorityFilter(priority);
+    };
+
     useEffect(() => {
         fetchData();
         handleEmailsSelected();
-    }, [reloadTable, selectedItems, filterOption, showActiveOnly]);
-
+    }, [reloadTable, selectedItems, filterOption, showActiveOnly, priorityFilter]); // Include priorityFilter in the dependency array
+    
     const fetchData = async () => {
         try {
             let url = `${baseUrl}/data`;
@@ -85,6 +90,10 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
 
             if (showActiveOnly) {
                 queryParams.push('status=active');
+            }
+
+            if (priorityFilter) {
+                queryParams.push(`priority=${priorityFilter}`); // Add priority filter parameter to the query
             }
 
             queryParams.push('trash=0');
@@ -109,7 +118,6 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
                 filteredData = filteredData.filter(item => item.added_by === username);
             }
 
-            // Check for duplicates and mark them as trash
             const uniqueItems = [];
             const duplicateIds = new Set();
             filteredData.forEach(item => {
@@ -120,7 +128,6 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
                 }
             });
 
-            // Update duplicate items to trash ('1')
             if (duplicateIds.size > 0) {
                 await axios.put(`${baseUrl}/update`, {
                     ids: Array.from(duplicateIds),
@@ -133,7 +140,6 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
                 });
             }
 
-            // Retain color information for each result
             uniqueItems.forEach(item => {
                 item.resultColor = getResultColor(item.Result);
             });
@@ -142,6 +148,14 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
         } catch (error) {
             console.error('Error fetching data:', error);
         }
+    };
+
+    // Function to filter the table data based on priority
+    const filterTableByPriority = (data) => {
+        if (priorityFilter) {
+            return data.filter(item => item.Priority === priorityFilter);
+        }
+        return data;
     };
 
     const handleFilterOption = (option) => {
@@ -355,6 +369,18 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
         <>
             <div className="d-flex justify-content-between mb-3">
                 <div className='col-1'>
+                <Dropdown>
+                        <Dropdown.Toggle className='link-secondary' variant="none" id="priority-filter-dropdown">
+                            Priority
+                        </Dropdown.Toggle>
+
+                        <Dropdown.Menu>
+                            <Dropdown.Item onClick={() => handlePriorityFilterChange(null)}>All</Dropdown.Item>
+                            <Dropdown.Item onClick={() => handlePriorityFilterChange(1)}>Priority 1</Dropdown.Item>
+                            <Dropdown.Item onClick={() => handlePriorityFilterChange(2)}>Priority 2</Dropdown.Item>
+                            <Dropdown.Item onClick={() => handlePriorityFilterChange(3)}>Priority 3</Dropdown.Item>
+                        </Dropdown.Menu>
+                    </Dropdown>
                     <Dropdown>
                         <Dropdown.Toggle className='link-secondary' variant="none" id="dropdown-basic">
                             {selectedItem}
@@ -414,98 +440,98 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
                     </tr>
                 </thead>
                 <tbody>
-                    {filteredTableData.map((item) => (
-                        <React.Fragment key={item.id}>
-                            <tr onClick={() => handleRowClick(item.id)}>
-                                <td>
-                                    <input
-                                        type="checkbox"
-                                        onChange={() => handleSelect(item.id)}
-                                        checked={selectedItems.includes(item.id)}
-                                    />
-                                </td>
-                                <td><span style={{ color: item.status === 'active' ? 'black' : 'silver' }}>{item.Name}</span></td>
-                                <td><a href={`tel:${item.Phone}`} style={{ color: item.status === 'active' ? 'black' : 'silver', textDecoration: 'none' }}>{item.Phone}</a></td>
-                                <td><span style={{
-                                    color: item.status === 'active' ? 'black' : 'silver', display: 'block',
-                                    maxWidth: '150px', // Set maximum width for the content
-                                    overflow: 'hidden',
-                                    whiteSpace: 'nowrap',
-                                    textOverflow: 'ellipsis'
-                                }}>{item.Email}</span></td>
-                                <td>
-                                    <span style={{
-                                        color: item.status === 'active' ? 'black' : 'silver',
-                                        display: 'block',
-                                        maxWidth: '150px', // Set maximum width for the content
-                                        overflow: 'hidden',
-                                        whiteSpace: 'nowrap',
-                                        textOverflow: 'ellipsis'
-                                    }}>
-                                        <a href={item.Website} target="_blank" rel="noopener noreferrer">{item.Website}</a>
-                                    </span>
-                                </td>
-                                <td>
-                                    {editableResult.id === item.id ? (
-                                        <select
-                                            value={editableResult.result}
-                                            onChange={handleResultChange}
-                                            onBlur={() => saveEditableResult(item.id)}
-                                        >
-                                            {resultOptions.map((option) => (
-                                                <option key={option} value={option}>{option}</option>
-                                            ))}
-                                        </select>
-                                    ) : (
-                                        <span
-                                            style={{
-                                                cursor: 'pointer',
-                                                color: item.resultColor,
-                                            }}
-                                            onClick={() => handleResultEdit(item.id, item.Result)}
-                                        >
-                                            {item.Result}
-                                        </span>
-                                    )}
-                                </td>
+                {filteredTableData.map((item) => (
+    <React.Fragment key={item.id}>
+        <tr onClick={() => handleRowClick(item.id)} style={{ fontWeight: item.priority === 1 ? 'bold' : 'normal', color: item.priority === 1 ? 'red' : 'inherit' }}>
+            <td>
+                <input
+                    type="checkbox"
+                    onChange={() => handleSelect(item.id)}
+                    checked={selectedItems.includes(item.id)}
+                />
+            </td>
+            <td><span style={{ color: item.status === 'active' ? 'black' : 'silver' }}>{item.Name}</span></td>
+            <td><a href={`tel:${item.Phone}`} style={{ color: item.status === 'active' ? 'black' : 'silver', textDecoration: 'none' }}>{item.Phone}</a></td>
+            <td><span style={{
+                color: item.status === 'active' ? 'black' : 'silver', display: 'block',
+                maxWidth: '150px', // Set maximum width for the content
+                overflow: 'hidden',
+                whiteSpace: 'nowrap',
+                textOverflow: 'ellipsis'
+            }}>{item.Email}</span></td>
+            <td>
+                <span style={{
+                    color: item.status === 'active' ? 'black' : 'silver',
+                    display: 'block',
+                    maxWidth: '150px', // Set maximum width for the content
+                    overflow: 'hidden',
+                    whiteSpace: 'nowrap',
+                    textOverflow: 'ellipsis'
+                }}>
+                    <a href={item.Website} target="_blank" rel="noopener noreferrer">{item.Website}</a>
+                </span>
+            </td>
+            <td>
+                {editableResult.id === item.id ? (
+                    <select
+                        value={editableResult.result}
+                        onChange={handleResultChange}
+                        onBlur={() => saveEditableResult(item.id)}
+                    >
+                        {resultOptions.map((option) => (
+                            <option key={option} value={option}>{option}</option>
+                        ))}
+                    </select>
+                ) : (
+                    <span
+                        style={{
+                            cursor: 'pointer',
+                            color: item.resultColor,
+                        }}
+                        onClick={() => handleResultEdit(item.id, item.Result)}
+                    >
+                        {item.Result}
+                    </span>
+                )}
+            </td>
 
-                                <td><span style={{ color: item.status === 'active' ? 'black' : 'silver' }}>{item.niche}</span></td>
-                                <td className='text-center'><span style={{ color: item.status === 'active' ? 'black' : 'silver' }}>{item.emails_sent}</span></td>
-                                {localStorage.getItem('role') === 'admin' && (
-                                    <td><span style={{ color: item.status === 'active' ? 'black' : 'silver' }}>{item.added_by}</span></td>
-                                )}
+            <td><span style={{ color: item.status === 'active' ? 'black' : 'silver' }}>{item.niche}</span></td>
+            <td className='text-center'><span style={{ color: item.status === 'active' ? 'black' : 'silver' }}>{item.emails_sent}</span></td>
+            {localStorage.getItem('role') === 'admin' && (
+                <td><span style={{ color: item.status === 'active' ? 'black' : 'silver' }}>{item.added_by}</span></td>
+            )}
 
-                                <td>
-                                    <span
-                                        style={{ color: item.status === 'active' ? 'green' : 'silver', cursor: 'pointer' }}
-                                        onClick={() => handleToggleSingleActivate(item.id)}
-                                    >
-                                        {item.status}
-                                    </span>
-                                </td>
-                            </tr>
-                            {item.id === selectedRowId && (
-                                <tr>
-                                    <td colSpan="7">
-                                        {item.id === selectedRowId && (
-                                            editingNoteId === item.id ? (
-                                                <div>
-                                                    <input
-                                                        type="text"
-                                                        value={editedNote}
-                                                        onChange={(e) => setEditedNote(e.target.value)}
-                                                    />
-                                                    <button onClick={() => saveEditedNote(item.id)}>Save</button>
-                                                </div>
-                                            ) : (
-                                                <div onClick={() => handleEditNote(item.id, item.Note)}>{item.Note}</div>
-                                            )
-                                        )}
-                                    </td>
-                                </tr>
-                            )}
-                        </React.Fragment>
-                    ))}
+            <td>
+                <span
+                    style={{ color: item.status === 'active' ? 'green' : 'silver', cursor: 'pointer' }}
+                    onClick={() => handleToggleSingleActivate(item.id)}
+                >
+                    {item.status}
+                </span>
+            </td>
+        </tr>
+        {item.id === selectedRowId && (
+            <tr>
+                <td colSpan="7">
+                    {item.id === selectedRowId && (
+                        editingNoteId === item.id ? (
+                            <div>
+                                <input
+                                    type="text"
+                                    value={editedNote}
+                                    onChange={(e) => setEditedNote(e.target.value)}
+                                />
+                                <button onClick={() => saveEditedNote(item.id)}>Save</button>
+                            </div>
+                        ) : (
+                            <div onClick={() => handleEditNote(item.id, item.Note)}>{item.Note}</div>
+                        )
+                    )}
+                </td>
+            </tr>
+        )}
+    </React.Fragment>
+))}
                 </tbody>
             </table>
             <nav>

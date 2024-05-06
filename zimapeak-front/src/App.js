@@ -9,6 +9,8 @@ import Contacts from './panel/Contacts';
 import Compose from './panel/Compose';
 import Emails from './panel/Emails';
 import Trash from './panel/Trash';
+import CaseStudy from './panel/Admin/CaseStudy';
+
 
 import MemberDashboard from './panel/User/UserDashboard';
 import AdminDashboard from './panel/Admin/AdminDashboard';
@@ -36,7 +38,10 @@ function App() {
           <Route path="/emails" element={<ProtectedRoute><Emails /></ProtectedRoute>} />
           <Route path="/calendar" element={<ProtectedRoute><MyCalendar /></ProtectedRoute>} />
           {userRole === 'admin' && (
-            <Route path="/trash" element={<ProtectedRoute><Trash /></ProtectedRoute>} />
+            <>
+              <Route path="/trash" element={<ProtectedRoute><Trash /></ProtectedRoute>} />
+              <Route path="/casestudy" element={<ProtectedRoute><CaseStudy /></ProtectedRoute>} />
+            </>
           )}
           <Route path="/event/:id" element={<ProtectedRoute><EventDetails /></ProtectedRoute>} />
         </Routes>

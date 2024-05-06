@@ -3,6 +3,12 @@ import axios from 'axios';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash, faUndo } from '@fortawesome/free-solid-svg-icons'; // Import the undo icon
 
+const truncateString = (str, maxLength) => {
+    if (str === null || str === undefined) {
+        return ''; // Return an empty string if str is null or undefined
+    }
+    return str.length > maxLength ? str.substring(0, maxLength - 3) + '...' : str;
+};
 
 const Trash = ({ onEmailsSelected, onDelete, reloadTable }) => {
     const [tableData, setTableData] = useState([]);
@@ -17,8 +23,8 @@ const Trash = ({ onEmailsSelected, onDelete, reloadTable }) => {
     const [currentPage, setCurrentPage] = useState(1);
     const [contactsPerPage] = useState(50); // Set the number of contacts per page
 
-      const baseUrl = process.env.REACT_APP_BASE_URL;
-  const token = localStorage.getItem('token');
+    const baseUrl = process.env.REACT_APP_BASE_URL;
+    const token = localStorage.getItem('token');
 
     const handleRowClick = (id) => {
         setSelectedRowId(id === selectedRowId ? null : id); // Toggle selected row
@@ -165,8 +171,6 @@ const Trash = ({ onEmailsSelected, onDelete, reloadTable }) => {
                         <th>Name</th>
                         <th>Email</th>
                         <th>Website</th>
-                        <th>Emails sent</th>
-                        <th>Deleted By</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -181,11 +185,9 @@ const Trash = ({ onEmailsSelected, onDelete, reloadTable }) => {
                                         checked={selectedItems.includes(item.id)}
                                     />
                                 </td>
-                                <td><span>{item.Name}</span></td>
-                                <td><span>{item.Email}</span></td>
-                                <td><span>{item.Website}</span></td>
-                                <td className='text-center'><span>{item.emails_sent}</span></td>
-                                <td><span>{item.deleted_by}</span></td>
+                                <td><span>{truncateString(item.Name, 25)}</span></td>
+                                <td><span>{truncateString(item.Email, 25)}</span></td>
+                                <td><span>{truncateString(item.Website, 25)}</span></td>
                                 <td>
                                     <button
                                         className="btn btn-primary btn-sm"
@@ -197,7 +199,7 @@ const Trash = ({ onEmailsSelected, onDelete, reloadTable }) => {
                             </tr>
                             {item.id === selectedRowId && (
                                 <tr>
-                                    <td colSpan="7">
+                                    <td colSpan="5">
                                         {item.id === selectedRowId && (
                                             editingNoteId === item.id ? (
                                                 <div>
@@ -207,7 +209,7 @@ const Trash = ({ onEmailsSelected, onDelete, reloadTable }) => {
                                                     />
                                                 </div>
                                             ) : (
-                                                <div>{item.Note}</div>
+                                                <div>{truncateString(item.Note, 100)}</div>
                                             )
                                         )}
                                     </td>

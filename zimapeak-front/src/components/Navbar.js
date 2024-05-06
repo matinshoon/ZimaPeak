@@ -121,6 +121,9 @@ const Navbar = () => {
               <li className="nav-item">
                 <Link className="nav-link" to="/trash">Trash</Link>
               </li>
+              <li className="nav-item">
+                <Link className="nav-link" to="/casestudy">Case Study</Link>
+              </li>
             </>
           )}
 

@@ -11,6 +11,7 @@ const bcrypt = require('bcrypt');
 const dayjs = require('dayjs');
 const jwt = require('jsonwebtoken');
 const moment = require('moment-timezone');
+const SftpClient = require('ssh2-sftp-client'); // Import the SftpClient class from the library
 
 
 require('dotenv').config();
@@ -136,10 +137,10 @@ app.post('/api/login', (req, res) => {
 app.get('/api/data', authenticateToken, (req, res) => {
   try {
     // Construct the base SQL query
-    let sql = 'SELECT id, Name, Phone, Email, Website, status, DATE(date_added) AS date_added, emails_sent, Note, added_by, trash, deleted_by, niche, Result FROM Contacts';
+    let sql = 'SELECT id, Name, Phone, Email, Website, status, DATE(date_added) AS date_added, emails_sent, Note, added_by, trash, deleted_by, niche, Result, priority FROM Contacts';
 
     // Check if filterOption, status, date_added, added_by, date, or trash query parameters are provided
-    const { filterOption, status, date_added, added_by, date, trash } = req.query;
+    const { filterOption, status, date_added, added_by, date, trash, priority } = req.query;
     let whereClause = '';
 
     // Apply filter based on filterOption
@@ -192,6 +193,11 @@ app.get('/api/data', authenticateToken, (req, res) => {
       whereClause = whereClause ? `${whereClause} AND trash = '${trash}'` : `WHERE trash = '${trash}'`;
     }
 
+    // Apply priority filter
+    if (priority !== undefined) {
+      whereClause = whereClause ? `${whereClause} AND priority = '${priority}'` : `WHERE priority = '${priority}'`;
+    }
+
     // Append whereClause to the SQL query if it exists
     if (whereClause) {
       sql += ` ${whereClause}`;
@@ -210,6 +216,7 @@ app.get('/api/data', authenticateToken, (req, res) => {
     return res.status(500).json({ error: 'Failed to fetch data' });
   }
 });
+
 
 app.get('/api/users/status', authenticateToken, (req, res) => {
   const userId = req.query.id;
@@ -340,20 +347,16 @@ app.post('/api/upload', authenticateToken, upload.single('file'), async (req, re
   }
 });
 
-
-
-
-
-app.post('/api/addContact', authenticateToken, async (req, res) => {
+app.post('/api/addContact', async (req, res) => {
   try {
     // Extract parameters from the request body
-    const { Name, Phone, Email, Website, added_by, niche, Result } = req.body; // Add 'niche' parameter
+    const { Name, Phone, Email, Website, added_by, niche, Result, priority } = req.body; // Add 'Priority' parameter
 
     // Generate a unique ID for the contact
     const id = uuid.v4();
 
-    // Insert the new contact into the database with added_by and niche information
-    const result = await db.query('INSERT INTO Contacts (id, Name, Phone, Email, Website, status, added_by, niche) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [id, Name, Phone, Email, Website, 'active', added_by, niche]);
+    // Insert the new contact into the database with added_by, niche, and priority information
+    const result = await db.query('INSERT INTO Contacts (id, Name, Phone, Email, Website, status, added_by, niche, Result, priority) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [id, Name, Phone, Email, Website, 'active', added_by, niche, Result, priority]);
 
     // Respond with success message
     res.json({ success: true, message: 'Contact added successfully' });
@@ -363,10 +366,6 @@ app.post('/api/addContact', authenticateToken, async (req, res) => {
     res.status(500).json({ success: false, message: 'Error adding contact' });
   }
 });
-
-
-
-
 
 app.put('/api/update', authenticateToken, (req, res) => {
   try {
@@ -808,6 +807,95 @@ app.delete('/api/todo/:id', authenticateToken, (req, res) => {
     }
   });
 });
+
+
+app.get(['/api/casestudies-get', '/api/casestudy-get/:id'], (req, res) => {
+  const { id } = req.params;
+
+  if (id) {
+      // Request is for a specific case study
+      const sql = 'SELECT * FROM casestudies WHERE id = ?';
+      db.query(sql, id, (err, result) => {
+          if (err) {
+              res.status(500).send('Error fetching data');
+              throw err;
+          }
+          res.json(result[0]); // Assuming only one case study will match the given ID
+      });
+  } else {
+      // Request is for all case studies
+      const sql = 'SELECT * FROM casestudies';
+      db.query(sql, (err, result) => {
+          if (err) {
+              res.status(500).send('Error fetching data');
+              throw err;
+          }
+          res.json(result);
+      });
+  }
+});
+
+
+app.post('/api/casestudies-make', authenticateToken, (req, res) => {
+  // Destructure required fields from the request body
+  const { title, summary, client, banner, tags, challenge, solution, outcome, results, logo } = req.body;
+
+  // Generate a unique ID for the case study
+  const id = uuid.v4();
+
+  // Prepare SQL query without logo field
+  const sql = `
+    INSERT INTO casestudies 
+    (id, title, summary, client, banner, logo, tags, challenge, solution, outcome, results) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+  const values = [id, title, summary, client, banner, logo, tags, challenge, solution, outcome, results];
+
+  // Execute the query
+  db.query(sql, values, (err, result) => {
+    if (err) {
+      console.error('Error adding data to casestudies table:', err);
+      res.status(500).send('Error adding data to casestudies table');
+      return;
+    }
+    res.status(201).send('Data added successfully');
+  });
+});
+
+// app.post('/api/upload-image', upload.single('image'), async (req, res) => {
+//   const file = req.file;
+//   const sftp = new SftpClient();
+
+//   try {
+//     await sftp.connect({
+//       host: 'server265.web-hosting.com',
+//       port: 21098,
+//       username: 'zimalxqv',
+//       password: 'SnwnZ9vAvdKP',
+//       readyTimeout: 20000 // Adjust the timeout value if needed
+//     });
+
+//     // Check if the destination directory exists, create it if it doesn't
+//     const directoryExists = await sftp.exists('/public_html/images');
+//     if (!directoryExists) {
+//       await sftp.mkdir('/public_html/images/', true); // Recursive flag set to true
+//     }
+
+//     // Upload the file to the destination directory
+//     await sftp.put(file.path, '/public_html/images/' + file.originalname);
+
+//     res.send('File uploaded successfully');
+//   } catch (error) {
+//     console.error('Error:', error);
+//     res.status(500).send('Error uploading file');
+//   } finally {
+//     try {
+//       await sftp.end();
+//     } catch (error) {
+//       console.error('Error closing SFTP connection:', error);
+//     }
+//   }
+// });
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
