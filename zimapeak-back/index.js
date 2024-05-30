@@ -11,7 +11,6 @@ const bcrypt = require('bcrypt');
 const dayjs = require('dayjs');
 const jwt = require('jsonwebtoken');
 const moment = require('moment-timezone');
-const SftpClient = require('ssh2-sftp-client'); // Import the SftpClient class from the library
 
 
 require('dotenv').config();
@@ -137,7 +136,7 @@ app.post('/api/login', (req, res) => {
 app.get('/api/data', authenticateToken, (req, res) => {
   try {
     // Construct the base SQL query
-    let sql = 'SELECT id, Name, Phone, Email, Website, status, DATE(date_added) AS date_added, emails_sent, Note, added_by, trash, deleted_by, niche, Result, priority FROM Contacts';
+    let sql = 'SELECT id, Name, Phone, Email, Website, status, DATE(date_added) AS date_added, emails_sent, Note, added_by, trash, deleted_by, niche, Result, priority, \`Social Media\`, Owner FROM Contacts';
 
     // Check if filterOption, status, date_added, added_by, date, or trash query parameters are provided
     const { filterOption, status, date_added, added_by, date, trash, priority } = req.query;
@@ -314,16 +313,21 @@ app.post('/api/upload', authenticateToken, upload.single('file'), async (req, re
       status: 'active', 
       added_by: req.query.added_by,
       niche: niche, // Include the retrieved niche
-      Result: item.Result || 'Ongoing' // Add 'Ongoing' if Result is not provided
+      Result: item.Result || 'Ongoing', // Add 'Ongoing' if Result is not provided
+      Owner: item.Owner || '', // Include Owner, default to empty string if not provided
+      'Social Media': item['Social Media'] && isUrl(item['Social Media']) ? item['Social Media'] : item['Social Media'] || '', // Handle Social Media as links separated by comma if it's a URL
+      Location: item.Location || '', // Include Location, default to empty string if not provided
+      Note: item.Note || '', // Include Note, default to empty string if not provided
+      priority: 3 // Set priority to 3 for all contacts
     }));
 
     if (data.length === 0) {
       return res.status(400).json({ error: 'No new contacts to add' });
     }
 
-    const placeholders = data.map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?)').join(', ');
-    const sql = `INSERT INTO Contacts (id, Name, Phone, Email, Website, status, added_by, niche, Result) VALUES ${placeholders}`;
-    const values = data.flatMap(row => [row.id, row.Name, row.Phone, row.Email, row.Website, row.status, row.added_by, row.niche, row.Result]);
+    const placeholders = data.map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').join(', ');
+    const sql = `INSERT INTO Contacts (id, Name, Phone, Email, Website, status, added_by, niche, Result, Owner, \`Social Media\`, Location, Note, priority) VALUES ${placeholders}`;
+    const values = data.flatMap(row => [row.id, row.Name, row.Phone, row.Email, row.Website, row.status, row.added_by, row.niche, row.Result, row.Owner, row['Social Media'], row.Location, row.Note, row.priority]);
 
     console.log('Generated SQL:', sql); // Log the SQL query here
     console.log('Values:', values);
@@ -347,10 +351,21 @@ app.post('/api/upload', authenticateToken, upload.single('file'), async (req, re
   }
 });
 
+
+function isUrl(s) {
+  const regexp = /^(ftp|http|https):\/\/[^ "]+$/;
+  return regexp.test(s);
+}
+
+
+
 app.post('/api/addContact', async (req, res) => {
   try {
     // Extract parameters from the request body
-    const { Name, Phone, Email, Website, added_by, niche, Result, priority } = req.body; // Add 'Priority' parameter
+    const { Name, Phone, Email, Website, added_by, niche, Result } = req.body; // Removed 'Priority' parameter
+
+    // Set priority to 3 by default
+    const priority = 3;
 
     // Generate a unique ID for the contact
     const id = uuid.v4();
@@ -366,6 +381,7 @@ app.post('/api/addContact', async (req, res) => {
     res.status(500).json({ success: false, message: 'Error adding contact' });
   }
 });
+
 
 app.put('/api/update', authenticateToken, (req, res) => {
   try {

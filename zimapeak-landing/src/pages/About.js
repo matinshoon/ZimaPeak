@@ -7,6 +7,47 @@ const About = () => {
     const { darkMode } = useContext(ThemeContext);
     const [modalOpen, setModalOpen] = useState(false); // State to manage modal visibility
 
+    const teamMembersWithPictures = [
+        {
+            name: 'Matt Rashidi',
+            position: 'CEO & Founder',
+            imageUrl: 'https://i.ibb.co/7nFXZgS/IMG-0973.jpg'
+        },
+        {
+            name: 'Yeganeh Yaghouti',
+            position: 'Marketing Director',
+            imageUrl: 'https://i.ibb.co/FbKzRF0/photo-2024-05-30-00-27-57.jpg'
+        },
+        {
+            name: 'Ali Abyari',
+            position: 'Social Media Director',
+            imageUrl: 'https://media.licdn.com/dms/image/D4E03AQHk_b-0h1bKKA/profile-displayphoto-shrink_400_400/0/1701868703743?e=1722470400&v=beta&t=FCtuI84ysN6bj4LjEVxI3SUOARZAY-undp7O61li1n8'
+        },
+    ];
+
+    const teamMembersWithoutPictures = [
+        {
+            name: 'Ava Woods',
+            position: 'Marketing Specialist'
+        },
+        {
+            name: 'Mia Carter',
+            position: 'Marketing Specialist'
+        },
+        {
+            name: 'Lily Stone',
+            position: 'Marketing Specialist'
+        },
+        {
+            name: 'Matthew Woods',
+            position: 'Web Developer'
+        },
+        {
+            name: 'Emily Davis',
+            position: 'Graphic Designer'
+        },
+    ];
+
     return (
         <div id="about" className={`flex justify-center items-center ${darkMode ? 'bg-gray-900 text-white' : 'bg-white text-black'}`}>
             <Navbar setModalOpen={setModalOpen} />
@@ -54,7 +95,32 @@ const About = () => {
                         <p className="mb-10">At ZimaPeak Marketing, our values serve as the foundation of everything we do. We are driven by a passion for innovation, collaboration, and continuous improvement. Integrity, transparency, and accountability guide our actions as we strive to build trust and foster meaningful relationships with our clients, partners, and community.</p>
                     </div>
                 </div>
-
+                {/* Team Section with Pictures */}
+                <div className='w-full md:w-3/5 my-20'>
+                    <h2 className="text-3xl font-bold text-center mb-10">Meet Our Team</h2>
+                    <div className="flex flex-wrap justify-center items-center">
+                        {teamMembersWithPictures.map((member, index) => (
+                            <div key={index} className="flex flex-col items-center m-4">
+                                <div className="w-40 h-40 bg-gray-300 rounded-full overflow-hidden">
+                                    <img src={member.imageUrl} alt={member.name} className="w-full h-full object-cover" />
+                                </div>
+                                <p className="mt-4 font-semibold">{member.name}</p>
+                                <p className="text-gray-500">{member.position}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+                {/* Team Section without Pictures */}
+                <div className='w-full md:w-3/5'>
+                    <div className="flex justify-center items-center">
+                        {teamMembersWithoutPictures.map((member, index) => (
+                            <div key={index} className="text-center mb-4">
+                                <p className="font-semibold text-xl mx-20">{member.name}</p>
+                                <p className="text-gray-500">{member.position}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
             </div>
         </div>
     );

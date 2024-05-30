@@ -91,7 +91,7 @@ const Compare = ({ darkMode }) => {
               <p>ROI</p>
               <h3 className="font-bold">10x</h3>
             </div>
-            <a href="#" className={`cta w-100 ${darkMode ? 'text-black' : 'text-white'}`}>
+            <a href="/booking" className={`cta w-100 ${darkMode ? 'text-black' : 'text-white'}`}>
               Book a Free Discovery Call
             </a>
           </div>
@@ -111,7 +111,7 @@ const Compare = ({ darkMode }) => {
               <p>ROI</p>
               <h3 className="font-bold">100x</h3>
             </div>
-            <a href="#" className={`cta w-100 ${darkMode ? 'text-black' : 'text-white'}`}>
+            <a href="/booking" className={`cta w-100 ${darkMode ? 'text-black' : 'text-white'}`}>
               Book a Free Discovery Call
             </a>
           </div>
@@ -131,7 +131,7 @@ const Compare = ({ darkMode }) => {
               <p>ROI</p>
               <h3 className="font-bold">20x</h3>
             </div>
-            <a href="#" className={`cta w-100 ${darkMode ? 'text-black' : 'text-white'}`}>
+            <a href="/booking" className={`cta w-100 ${darkMode ? 'text-black' : 'text-white'}`}>
               Book a Free Discovery Call
             </a>
           </div>

@@ -101,65 +101,67 @@ const Navbar = () => {
         </button>
 
         <div className={`collapse navbar-collapse justify-content-between ${isMenuOpen ? 'show' : ''}`} id="navbarSupportedContent">
-      {isAuthenticated && (
-        <ul className="navbar-nav mr-auto">
-          {userRole === 'admin' && (
-            <>
-              <li className="nav-item">
-                <Link className="nav-link" to="/dashboard">Dashboard</Link>
-              </li>
-              <li className="nav-item">
-                <Link className="nav-link" to="/contacts">Contacts</Link>
-              </li>
-              <NavDropdown title="Emails" id="basic-nav-dropdown">
-                <NavDropdown.Item><Link className="dropdown-item" to="/compose">Compose</Link></NavDropdown.Item>
-                <NavDropdown.Item><Link className="dropdown-item" to="/emails">Emails</Link></NavDropdown.Item>
-              </NavDropdown>
-              <li className="nav-item">
-                <Link className="nav-link" to="/calendar">Calendar</Link>
-              </li>
-              <li className="nav-item">
-                <Link className="nav-link" to="/trash">Trash</Link>
-              </li>
-              <li className="nav-item">
-                <Link className="nav-link" to="/casestudy">Case Study</Link>
-              </li>
-            </>
-          )}
+          {isAuthenticated && (
+            <ul className="navbar-nav mr-auto">
+              {userRole === 'admin' && (
+                <>
+                  <li className="nav-item">
+                    <Link className="nav-link" to="/dashboard">Dashboard</Link>
+                  </li>
+                  <NavDropdown title="Contacts" id="basic-nav-dropdown">
+                  <NavDropdown.Item><Link className="nav-link" to="/contacts">Contacts</Link></NavDropdown.Item>
+                  <NavDropdown.Item><Link className="nav-link" to="/leads">Leads</Link></NavDropdown.Item>
+                  </NavDropdown>
+                  <NavDropdown title="Emails" id="basic-nav-dropdown">
+                    <NavDropdown.Item><Link className="dropdown-item" to="/compose">Compose</Link></NavDropdown.Item>
+                    <NavDropdown.Item><Link className="dropdown-item" to="/emails">Emails</Link></NavDropdown.Item>
+                  </NavDropdown>
+                  <li className="nav-item">
+                    <Link className="nav-link" to="/calendar">Calendar</Link>
+                  </li>
+                  <li className="nav-item">
+                    <Link className="nav-link" to="/trash">Trash</Link>
+                  </li>
+                  <li className="nav-item">
+                    <Link className="nav-link" to="/casestudy">Case Study</Link>
+                  </li>
+                </>
+              )}
 
-          {userRole === 'user' && (
-            <>
-              <li className="nav-item">
-                <Link className="nav-link" to="/dashboard">Dashboard</Link>
-              </li>
-              <li className="nav-item">
-                <Link className="nav-link" to="/contacts">Contacts</Link>
-              </li>
-              <NavDropdown title="Emails" id="basic-nav-dropdown">
-                <NavDropdown.Item><Link className="dropdown-item" to="/compose">Compose</Link></NavDropdown.Item>
-                <NavDropdown.Item><Link className="dropdown-item" to="/emails">Emails</Link></NavDropdown.Item>
-              </NavDropdown>
-              <li className="nav-item">
-                <Link className="nav-link" to="/calendar">Calendar</Link>
-              </li>
-            </>
+              {userRole === 'user' && (
+                <>
+                  <li className="nav-item">
+                    <Link className="nav-link" to="/dashboard">Dashboard</Link>
+                  </li>
+                  <NavDropdown title="Contacts" id="basic-nav-dropdown">
+                  <NavDropdown.Item><Link className="nav-link" to="/contacts">Contacts</Link></NavDropdown.Item>
+                  <NavDropdown.Item><Link className="nav-link" to="#">Leads</Link></NavDropdown.Item>
+                  </NavDropdown>
+                  <NavDropdown title="Emails" id="basic-nav-dropdown">
+                    <NavDropdown.Item><Link className="dropdown-item" to="/compose">Compose</Link></NavDropdown.Item>
+                    <NavDropdown.Item><Link className="dropdown-item" to="/emails">Emails</Link></NavDropdown.Item>
+                  </NavDropdown>
+                  <li className="nav-item">
+                    <Link className="nav-link" to="/calendar">Calendar</Link>
+                  </li>
+                </>
+              )}
+            </ul>
           )}
-        </ul>
-      )}
-      {isAuthenticated && (
-        <ul className="navbar-nav ml-auto d-flex align-items-center">
-          <li className="nav-item dropdown">
-            <UserDropdown
-              userStatus={userStatus}
-              onlineUsers={onlineUsers}
-              loggedInUser={loggedInUser}
-              updateStatus={updateStatus}
-              handleLogout={handleLogout}
-            />
-          </li>
-        </ul>
-      )}
-    </div>
+          {isAuthenticated && (
+            <ul className="navbar-nav ml-auto d-flex align-items-center">
+              <li className="nav-item dropdown">
+                <UserDropdown
+                  userStatus={userStatus}
+                  onlineUsers={onlineUsers}
+                  loggedInUser={loggedInUser}
+                  updateStatus={updateStatus}
+                  handleLogout={handleLogout}
+                />
+              </li>
+            </ul>
+          )}
+        </div>
       </div>
     </nav>
   );

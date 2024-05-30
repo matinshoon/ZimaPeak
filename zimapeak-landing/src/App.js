@@ -6,6 +6,7 @@ import Home from './pages/Home';
 import CaseStudies from './pages/CaseStudies';
 import CaseStudy from './pages/CaseStudy';
 import Services from './pages/Services';
+import Booking from './pages/Booking';
 import About from './pages/About';
 import Footer from './components/Footer'
 import { ThemeContext } from './ThemeContext'; // Import ThemeContext
@@ -20,6 +21,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/services" element={<Services />} />
+          <Route path="/booking" element={<Booking />} />
           <Route path="/about" element={<About />} />
           <Route path="/casestudies" element={<CaseStudies />} />
           <Route path="/casestudy/:id" element={<CaseStudy />} />

@@ -77,7 +77,7 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
         fetchData();
         handleEmailsSelected();
     }, [reloadTable, selectedItems, filterOption, showActiveOnly, priorityFilter]); // Include priorityFilter in the dependency array
-    
+
     const fetchData = async () => {
         try {
             let url = `${baseUrl}/data`;
@@ -344,21 +344,38 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
         }
     };
 
-    const resultOptions = ['interested', 'not interested', 'call back', 'voice mail'];
+    const resultOptions = ['interested', 'not interested', 'call back', 'voice mail', 'follow up'];
 
     const getResultColor = (result) => {
         switch (result) {
             case 'interested':
+            case 'Interested':
                 return 'green';
             case 'not interested':
+            case 'Not interested':
+            case 'Not Interested':
+            case 'Not Intrested':
+            case 'Not intrested':
                 return 'red';
             case 'voicemail':
+            case 'Voicemail':
             case 'voice mail':
+            case 'Voice mail':
+            case 'Voice Mail':
             case 'call back':
+            case 'Call Back':
+            case 'Call back':
             case 'callback':
                 return 'orange';
-            case 'Ongoing':
+            case 'follow up':
+            case 'Follow Up':
+            case 'Follow up':
+            case 'follow-up':
+            case 'Follow-Up':
+            case 'Follow-up':
                 return 'blue';
+            case 'Ongoing':
+                return 'gray';
             default:
                 return 'inherit';
         }
@@ -369,7 +386,7 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
         <>
             <div className="d-flex justify-content-between mb-3">
                 <div className='col-1'>
-                <Dropdown>
+                    <Dropdown>
                         <Dropdown.Toggle className='link-secondary' variant="none" id="priority-filter-dropdown">
                             Priority
                         </Dropdown.Toggle>
@@ -432,6 +449,8 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
                         <th>Phone</th>
                         <th>Email</th>
                         <th>Website</th>
+                        <th>Owner</th>
+                        {/* <th>Social Media</th> */}
                         <th>Result</th>
                         <th>Niche</th>
                         <th>Emails Sent</th>
@@ -440,98 +459,112 @@ const ContactsTable = ({ onEmailsSelected, onDelete, reloadTable }) => {
                     </tr>
                 </thead>
                 <tbody>
-                {filteredTableData.map((item) => (
-    <React.Fragment key={item.id}>
-        <tr onClick={() => handleRowClick(item.id)} style={{ fontWeight: item.priority === 1 ? 'bold' : 'normal', color: item.priority === 1 ? 'red' : 'inherit' }}>
-            <td>
-                <input
-                    type="checkbox"
-                    onChange={() => handleSelect(item.id)}
-                    checked={selectedItems.includes(item.id)}
-                />
-            </td>
-            <td><span style={{ color: item.status === 'active' ? 'black' : 'silver' }}>{item.Name}</span></td>
-            <td><a href={`tel:${item.Phone}`} style={{ color: item.status === 'active' ? 'black' : 'silver', textDecoration: 'none' }}>{item.Phone}</a></td>
-            <td><span style={{
-                color: item.status === 'active' ? 'black' : 'silver', display: 'block',
-                maxWidth: '150px', // Set maximum width for the content
-                overflow: 'hidden',
-                whiteSpace: 'nowrap',
-                textOverflow: 'ellipsis'
-            }}>{item.Email}</span></td>
-            <td>
-                <span style={{
-                    color: item.status === 'active' ? 'black' : 'silver',
-                    display: 'block',
-                    maxWidth: '150px', // Set maximum width for the content
-                    overflow: 'hidden',
-                    whiteSpace: 'nowrap',
-                    textOverflow: 'ellipsis'
-                }}>
-                    <a href={item.Website} target="_blank" rel="noopener noreferrer">{item.Website}</a>
-                </span>
-            </td>
-            <td>
-                {editableResult.id === item.id ? (
-                    <select
-                        value={editableResult.result}
-                        onChange={handleResultChange}
-                        onBlur={() => saveEditableResult(item.id)}
-                    >
-                        {resultOptions.map((option) => (
-                            <option key={option} value={option}>{option}</option>
+                    {filteredTableData
+                        .slice((currentPage - 1) * contactsPerPage, currentPage * contactsPerPage)
+                        .map((item) => (
+                            <React.Fragment key={item.id}>
+                                <tr onClick={() => handleRowClick(item.id)} style={{ fontWeight: item.priority === 1 ? 'bold' : 'normal', color: item.priority === 1 ? 'red' : 'inherit' }}>
+                                    <td>
+                                        <input
+                                            type="checkbox"
+                                            onChange={() => handleSelect(item.id)}
+                                            checked={selectedItems.includes(item.id)}
+                                        />
+                                    </td>
+                                    <td><span style={{ color: item.status === 'active' ? 'black' : 'silver' }}>{item.Name}</span></td>
+                                    <td><a href={`tel:${item.Phone}`} style={{ color: item.status === 'active' ? 'black' : 'silver', textDecoration: 'none' }}>{item.Phone}</a></td>
+                                    <td><span style={{
+                                        color: item.status === 'active' ? 'black' : 'silver', display: 'block',
+                                        maxWidth: '150px', // Set maximum width for the content
+                                        overflow: 'hidden',
+                                        whiteSpace: 'nowrap',
+                                        textOverflow: 'ellipsis'
+                                    }}>{item.Email}</span></td>
+                                    <td>
+                                        <span style={{
+                                            color: item.status === 'active' ? 'black' : 'silver',
+                                            display: 'block',
+                                            maxWidth: '150px', // Set maximum width for the content
+                                            overflow: 'hidden',
+                                            whiteSpace: 'nowrap',
+                                            textOverflow: 'ellipsis'
+                                        }}>
+                                            <a href={item.Website} target="_blank" rel="noopener noreferrer">{item.Website}</a>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span style={{
+                                            color: item.status === 'active' ? 'black' : 'silver',
+                                            display: 'block',
+                                            maxWidth: '150px', // Set maximum width for the content
+                                            overflow: 'hidden',
+                                            whiteSpace: 'nowrap',
+                                            textOverflow: 'ellipsis'
+                                        }}>
+                                            {item.Owner}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {editableResult.id === item.id ? (
+                                            <select
+                                                value={editableResult.result}
+                                                onChange={handleResultChange}
+                                                onBlur={() => saveEditableResult(item.id)}
+                                            >
+                                                {resultOptions.map((option) => (
+                                                    <option key={option} value={option}>{option}</option>
+                                                ))}
+                                            </select>
+                                        ) : (
+                                            <span
+                                                style={{
+                                                    cursor: 'pointer',
+                                                    color: item.resultColor,
+                                                }}
+                                                onClick={() => handleResultEdit(item.id, item.Result)}
+                                            >
+                                                {item.Result}
+                                            </span>
+                                        )}
+                                    </td>
+
+                                    <td><span style={{ color: item.status === 'active' ? 'black' : 'silver' }}>{item.niche}</span></td>
+                                    <td className='text-center'><span style={{ color: item.status === 'active' ? 'black' : 'silver' }}>{item.emails_sent}</span></td>
+                                    {localStorage.getItem('role') === 'admin' && (
+                                        <td><span style={{ color: item.status === 'active' ? 'black' : 'silver' }}>{item.added_by}</span></td>
+                                    )}
+
+                                    <td>
+                                        <span
+                                            style={{ color: item.status === 'active' ? 'green' : 'silver', cursor: 'pointer' }}
+                                            onClick={() => handleToggleSingleActivate(item.id)}
+                                        >
+                                            {item.status}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {item.id === selectedRowId && (
+                                    <tr>
+                                        <td colSpan="7">
+                                            {item.id === selectedRowId && (
+                                                editingNoteId === item.id ? (
+                                                    <div>
+                                                        <input
+                                                            type="text"
+                                                            value={editedNote}
+                                                            onChange={(e) => setEditedNote(e.target.value)}
+                                                        />
+                                                        <button onClick={() => saveEditedNote(item.id)}>Save</button>
+                                                    </div>
+                                                ) : (
+                                                    <div onClick={() => handleEditNote(item.id, item.Note)}>{item.Note}</div>
+                                                )
+                                            )}
+                                        </td>
+                                    </tr>
+                                )}
+                            </React.Fragment>
                         ))}
-                    </select>
-                ) : (
-                    <span
-                        style={{
-                            cursor: 'pointer',
-                            color: item.resultColor,
-                        }}
-                        onClick={() => handleResultEdit(item.id, item.Result)}
-                    >
-                        {item.Result}
-                    </span>
-                )}
-            </td>
-
-            <td><span style={{ color: item.status === 'active' ? 'black' : 'silver' }}>{item.niche}</span></td>
-            <td className='text-center'><span style={{ color: item.status === 'active' ? 'black' : 'silver' }}>{item.emails_sent}</span></td>
-            {localStorage.getItem('role') === 'admin' && (
-                <td><span style={{ color: item.status === 'active' ? 'black' : 'silver' }}>{item.added_by}</span></td>
-            )}
-
-            <td>
-                <span
-                    style={{ color: item.status === 'active' ? 'green' : 'silver', cursor: 'pointer' }}
-                    onClick={() => handleToggleSingleActivate(item.id)}
-                >
-                    {item.status}
-                </span>
-            </td>
-        </tr>
-        {item.id === selectedRowId && (
-            <tr>
-                <td colSpan="7">
-                    {item.id === selectedRowId && (
-                        editingNoteId === item.id ? (
-                            <div>
-                                <input
-                                    type="text"
-                                    value={editedNote}
-                                    onChange={(e) => setEditedNote(e.target.value)}
-                                />
-                                <button onClick={() => saveEditedNote(item.id)}>Save</button>
-                            </div>
-                        ) : (
-                            <div onClick={() => handleEditNote(item.id, item.Note)}>{item.Note}</div>
-                        )
-                    )}
-                </td>
-            </tr>
-        )}
-    </React.Fragment>
-))}
                 </tbody>
             </table>
             <nav>

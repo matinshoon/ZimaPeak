@@ -84,7 +84,7 @@ const Compose = () => {
                 <br><br><a href="https://calendly.com/zimapeak_audit/30min" style="background-color: #28a745; color: #ffffff; text-decoration: none; padding: 15px 30px; border-radius: 5px; display: inline-block; margin-top: 20px; margin-bottom: 50px;">Let's have a chat!</a>
                 <div style="display: flex;">
                     <div style="display: flex; justify-content: center; align-items: center; border-right: #000 solid 2px; margin-right: 10px;">
-                        <img src="https://zimapeak.com/images/logo-blue.png" style="height: 100px;">
+                        <img src="https://zimapeak.com/static/media/logo-blue.3d46a8c6a77b725bf980.png" style="height: 100px;">
                     </div>
                     <div>
                         <p>Best regards,</p>

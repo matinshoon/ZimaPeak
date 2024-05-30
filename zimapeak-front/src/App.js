@@ -6,6 +6,7 @@ import Login from './panel/Login';
 import ProtectedRoute from './ProtectedRoute';
 
 import Contacts from './panel/Contacts';
+import Leads from './panel/Leads';
 import Compose from './panel/Compose';
 import Emails from './panel/Emails';
 import Trash from './panel/Trash';
@@ -33,6 +34,7 @@ function App() {
               {userRole === 'user' && <MemberDashboard />}
             </ProtectedRoute>
           } />
+          <Route path="/leads" element={<ProtectedRoute><Leads /></ProtectedRoute>} />
           <Route path="/contacts" element={<ProtectedRoute><Contacts /></ProtectedRoute>} />
           <Route path="/compose" element={<ProtectedRoute><Compose /></ProtectedRoute>} />
           <Route path="/emails" element={<ProtectedRoute><Emails /></ProtectedRoute>} />
