@@ -11,7 +11,7 @@ const ThemeProvider = ({ children }) => {
     const currentTime = new Date().getHours();
 
     // Set the theme based on the current time
-    if (currentTime >= 0 && currentTime < 18) {
+    if (currentTime >= 5 && currentTime < 18) {
       setDarkMode(false);
     } else {
       setDarkMode(true); // Set dark mode for the rest of the time

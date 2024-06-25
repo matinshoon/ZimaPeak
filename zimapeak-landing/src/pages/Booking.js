@@ -45,9 +45,9 @@ const Booking = () => {
     };
 
     return (
-        <div className={`${darkMode ? 'bg-gray-900 text-white' : 'bg-white text-black'}`}>
+        <div className={`${darkMode ? 'bg-dark text-white' : 'bg-white text-black'}`}>
             <div className="flex justify-center items-center py-28">
-                <div className={`${darkMode ? 'bg-gray-900 text-white' : 'bg-white text-black'} p-6 rounded-lg w-1/2`}>
+                <div className={`${darkMode ? 'bg-dark text-white' : 'bg-white text-black'} p-6 rounded-lg w-1/2`}>
                     <h2 className="text-2xl flex justify-center font-semibold mb-20">Book an Event</h2>
                     <form onSubmit={handleSubmit}>
                         <div className="mb-4">

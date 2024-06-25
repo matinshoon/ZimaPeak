@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useParams } from 'react-router-dom';
 import { ThemeContext } from '../ThemeContext';
 import Navbar from '../components/Navbar';
-import BookEvent from '../components/BookEvent';
+import BookEvent from '../components/Booking/BookEvent';
 
 const CaseStudy = () => {
     const { darkMode } = useContext(ThemeContext);
@@ -36,7 +36,7 @@ const CaseStudy = () => {
     ];
 
     return (
-        <div id="casestudies" className={`flex justify-center items-center ${darkMode ? 'bg-gray-900 text-white' : 'bg-white text-black'}`}>
+        <div id="casestudies" className={`flex justify-center items-center ${darkMode ? 'bg-dark text-white' : 'bg-white text-black'}`}>
             <Navbar setModalOpen={setModalOpen} />
             {modalOpen && (
                 <div className="fixed z-20 inset-0 overflow-y-auto">

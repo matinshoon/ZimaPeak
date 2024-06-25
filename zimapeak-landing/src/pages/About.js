@@ -1,11 +1,12 @@
 import React, { useContext, useState } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { ThemeContext } from '../ThemeContext';
 import Navbar from '../components/Navbar';
-import BookEvent from '../components/BookEvent';
+import BookEvent from '../components/Booking/BookEvent';
 
 const About = () => {
     const { darkMode } = useContext(ThemeContext);
-    const [modalOpen, setModalOpen] = useState(false); // State to manage modal visibility
+    const [modalOpen, setModalOpen] = useState(false);
 
     const teamMembersWithPictures = [
         {
@@ -49,7 +50,12 @@ const About = () => {
     ];
 
     return (
-        <div id="about" className={`flex justify-center items-center ${darkMode ? 'bg-gray-900 text-white' : 'bg-white text-black'}`}>
+        <div id="about" className={`flex flex-col justify-center items-center ${darkMode ? 'bg-dark text-white' : 'bg-white text-black'}`}>
+            <Helmet>
+                <title>About | ZimaPeak Marketing - Toronto's Premier Digital Marketing Agency</title>
+                <meta name="description" content="Learn more about ZimaPeak Marketing, Toronto's leading digital marketing agency specializing in social media marketing, SEO, and web development. Meet our team of experts dedicated to elevating your brand's online presence." />
+                <link rel="canonical" href="https://www.zimapeak.com/about" />
+            </Helmet>
             <Navbar setModalOpen={setModalOpen} />
             {modalOpen && (
                 <div className="fixed z-20 inset-0 overflow-y-auto">
@@ -63,7 +69,7 @@ const About = () => {
                     </div>
                 </div>
             )}
-            <div className="container mx-auto py-40 z-10 relative flex flex-col justify-center items-center">
+            <div className="container mx-auto py-20 z-10 relative flex flex-col justify-center items-center">
                 <p className="mb-4 text-sky-400">About Us</p>
                 <h1 className="text-3xl font-bold relative">ZimaPeak Marketing</h1>
                 <p className="text-lg text-center mt-4">Elevating Your Beauty Brand's Social Media Presence. We're experts in crafting strategies to boost engagement and visibility.</p>
@@ -112,15 +118,16 @@ const About = () => {
                 </div>
                 {/* Team Section without Pictures */}
                 <div className='w-full md:w-3/5'>
-                    <div className="flex justify-center items-center">
+                    <div className="flex flex-wrap justify-center items-center">
                         {teamMembersWithoutPictures.map((member, index) => (
-                            <div key={index} className="text-center mb-4">
-                                <p className="font-semibold text-xl mx-20">{member.name}</p>
+                            <div key={index} className="text-center mb-4 w-full sm:w-1/2 lg:w-1/3 px-4">
+                                <p className="font-semibold text-xl">{member.name}</p>
                                 <p className="text-gray-500">{member.position}</p>
                             </div>
                         ))}
                     </div>
                 </div>
+
             </div>
         </div>
     );
